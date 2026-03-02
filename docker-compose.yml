@@ -1,0 +1,28 @@
+
+
+services:
+  db:
+    image: ankane/pgvector:latest # PostgreSQL with pgvector extension pre-installed
+    container_name: bitbrains_db
+    environment:
+      POSTGRES_USER: bitbrains
+      POSTGRES_PASSWORD: bitbrains_password
+      POSTGRES_DB: bitbrains_dev
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: bitbrains_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@bitbrains.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    restart: always
+
+volumes:
+  postgres_data:
