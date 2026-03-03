@@ -18,4 +18,5 @@ COPY backend/ .
 EXPOSE 8000
 
 # Start the FastAPI application via Uvicorn (configured for cloud deployments like Railway)
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Start the FastAPI application via Uvicorn (configured for cloud deployments like Railway)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
