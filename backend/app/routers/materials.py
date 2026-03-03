@@ -77,16 +77,30 @@ async def upload_material(
     db.commit()
     db.refresh(new_material)
 
-    # Trigger Ingestion Background Task (or sync for now)
-    # Ideally use BackgroundTasks, but keeping it simple sync for prototype
-    # Need to import RagService inside or top
+    # Trigger Ingestion Background Task
     from app.services.rag_service import RagService
     try:
         rag_service = RagService(db)
-        # We need async, but this route is async def, so await is fine
         await rag_service.ingest_material(new_material.id)
     except Exception as e:
-        print(f"Ingestion failed: {e}") # Non-blocking error
+        print(f"Ingestion failed: {e}")
+
+    # Send push notification to all registered users
+    from app.services.notification_service import send_multicast
+    try:
+        all_tokens = [
+            u.fcm_token for u in db.query(User).filter(User.fcm_token.isnot(None)).all()
+            if u.id != current_user.id
+        ]
+        if all_tokens:
+            send_multicast(
+                tokens=all_tokens,
+                title="📚 New Study Material",
+                body=f"{title} has been uploaded by {current_user.full_name}",
+                data={"material_id": str(new_material.id), "type": "new_material"},
+            )
+    except Exception as e:
+        print(f"Push notification failed: {e}")
 
     return new_material
 

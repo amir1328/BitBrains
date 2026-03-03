@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from .. import database, models, utils
 from ..services.websocket_manager import ConnectionManager
 from ..schemas import chat_message as schemas
-import json # Import json
+import json
 from datetime import datetime
 
 router = APIRouter(
@@ -12,6 +12,7 @@ router = APIRouter(
 )
 
 manager = ConnectionManager()
+
 
 @router.websocket("/chat/{room_id}/{user_id}")
 async def websocket_endpoint(
@@ -24,11 +25,11 @@ async def websocket_endpoint(
     try:
         while True:
             data = await websocket.receive_text()
-            # Persist message to DB
             message_data = json.loads(data)
             content = message_data.get("content")
-            
+
             if content:
+                # Persist message
                 db_message = models.chat_message.ChatMessage(
                     sender_id=user_id,
                     content=content,
@@ -38,12 +39,10 @@ async def websocket_endpoint(
                 db.add(db_message)
                 db.commit()
                 db.refresh(db_message)
-                
-                # Retrieve sender name for broadcast
+
                 user = db.query(models.user.User).filter(models.user.User.id == user_id).first()
                 sender_name = user.full_name if user else "Unknown"
-                
-                # Broadcast format
+
                 response_data = {
                     "id": db_message.id,
                     "sender_id": user_id,
@@ -52,21 +51,39 @@ async def websocket_endpoint(
                     "room_id": room_id,
                     "timestamp": db_message.timestamp.isoformat()
                 }
-                
+
                 await manager.broadcast(json.dumps(response_data), room_id)
-            
+
+                # Push notification to offline users (non-blocking)
+                try:
+                    from app.services.notification_service import send_multicast
+                    other_tokens = [
+                        u.fcm_token for u in db.query(models.user.User)
+                        .filter(models.user.User.fcm_token.isnot(None))
+                        .filter(models.user.User.id != user_id)
+                        .all()
+                    ]
+                    if other_tokens:
+                        short_msg = content if len(content) <= 80 else content[:77] + "..."
+                        send_multicast(
+                            tokens=other_tokens,
+                            title=f"💬 {sender_name} in #{room_id}",
+                            body=short_msg,
+                            data={"room_id": room_id, "type": "group_message"},
+                        )
+                except Exception as notif_err:
+                    print(f"Group chat notification error: {notif_err}")
+
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
-        # Optional: Broadcast user left
+
 
 @router.get("/chat/history/{room_id}", response_model=list[schemas.ChatMessageResponse])
 def get_chat_history(room_id: str, db: Session = Depends(database.get_db)):
     messages = db.query(models.chat_message.ChatMessage).filter(
         models.chat_message.ChatMessage.room_id == room_id
     ).order_by(models.chat_message.ChatMessage.timestamp.asc()).all()
-    
-    # Enrich with sender_name manually if not eager loaded, or rely on relationship
-    # Simple mapping
+
     result = []
     for msg in messages:
         sender_name = msg.sender.full_name if msg.sender else "Unknown"

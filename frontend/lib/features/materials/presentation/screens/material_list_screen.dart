@@ -4,12 +4,32 @@ import 'package:go_router/go_router.dart';
 import '../../logic/bloc/material_bloc.dart';
 import '../../logic/bloc/material_bloc_definitions.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/responsive.dart';
 
-// Feature screens for bottom nav
+// Feature screens hosted in the bottom nav / rail
 import '../../../chat/presentation/screens/chat_screen.dart';
 import '../../../timetable/presentation/screens/timetable_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../alumni/presentation/screens/alumni_list_screen.dart';
+
+// ─── Navigation destinations ──────────────────────────────────────────────────
+
+class _NavDest {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavDest(this.icon, this.activeIcon, this.label);
+}
+
+const _destinations = [
+  _NavDest(Icons.auto_stories_outlined, Icons.auto_stories, 'Materials'),
+  _NavDest(Icons.calendar_month_outlined, Icons.calendar_month, 'Timetable'),
+  _NavDest(Icons.psychology_outlined, Icons.psychology, 'AI Chat'),
+  _NavDest(Icons.people_outline_rounded, Icons.people_rounded, 'Alumni'),
+  _NavDest(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+];
+
+// ─── Home Shell ───────────────────────────────────────────────────────────────
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -21,16 +41,106 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    MaterialListScreen._internal(),
-    TimetableScreen(),
-    ChatScreen(),
-    AlumniListScreen(),
-    ProfileScreen(),
+  final List<Widget> _screens = [
+    const MaterialListScreen(),
+    const TimetableScreen(),
+    const ChatScreen(),
+    const AlumniListScreen(),
+    const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    return context.isDesktop ? _buildDesktopShell() : _buildMobileShell();
+  }
+
+  // ── Desktop: NavigationRail + content side by side ─────────────────────────
+
+  Widget _buildDesktopShell() {
+    return Scaffold(
+      body: GradientBackground(
+        child: Row(
+          children: [
+            _buildNavigationRail(),
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: Color(0xFF263151),
+            ),
+            Expanded(
+              child: IndexedStack(index: _currentIndex, children: _screens),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationRail() {
+    return NavigationRail(
+      backgroundColor: AppColors.darkSurface,
+      selectedIndex: _currentIndex,
+      onDestinationSelected: (i) => setState(() => _currentIndex = i),
+      extended: context.screenWidth >= 1100,
+      minWidth: 72,
+      minExtendedWidth: 200,
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            const BitBrainsLogo(size: 44),
+            if (context.screenWidth >= 1100) ...[
+              const SizedBox(height: 10),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [AppColors.primary, AppColors.accentLight],
+                ).createShader(bounds),
+                child: const Text(
+                  'BitBrains',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+      selectedIconTheme: const IconThemeData(
+        color: AppColors.primary,
+        size: 22,
+      ),
+      unselectedIconTheme: const IconThemeData(
+        color: AppColors.textMuted,
+        size: 22,
+      ),
+      selectedLabelTextStyle: const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
+      ),
+      unselectedLabelTextStyle: const TextStyle(
+        color: AppColors.textMuted,
+        fontSize: 13,
+      ),
+      destinations: _destinations
+          .map(
+            (d) => NavigationRailDestination(
+              icon: Icon(d.icon),
+              selectedIcon: Icon(d.activeIcon),
+              label: Text(d.label),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  // ── Mobile: BottomNavigationBar ────────────────────────────────────────────
+
+  Widget _buildMobileShell() {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
@@ -40,7 +150,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -49,42 +159,25 @@ class _HomeShellState extends State<HomeShell> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.auto_stories_outlined),
-              activeIcon: Icon(Icons.auto_stories),
-              label: 'Materials',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month_outlined),
-              activeIcon: Icon(Icons.calendar_month),
-              label: 'Timetable',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.psychology_outlined),
-              activeIcon: Icon(Icons.psychology),
-              label: 'AI Chat',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline_rounded),
-              activeIcon: Icon(Icons.people_rounded),
-              label: 'Alumni',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-          ],
+          items: _destinations
+              .map(
+                (d) => BottomNavigationBarItem(
+                  icon: Icon(d.icon),
+                  activeIcon: Icon(d.activeIcon),
+                  label: d.label,
+                ),
+              )
+              .toList(),
         ),
       ),
     );
   }
 }
 
+// ─── Materials Screen ─────────────────────────────────────────────────────────
+
 class MaterialListScreen extends StatefulWidget {
   const MaterialListScreen({super.key});
-  const MaterialListScreen._internal();
 
   @override
   State<MaterialListScreen> createState() => _MaterialListScreenState();
@@ -99,43 +192,31 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: BlocBuilder<MaterialBloc, StudyMaterialState>(
-                  builder: (context, state) {
-                    if (state is MaterialLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      );
-                    } else if (state is MaterialError) {
-                      return _buildErrorState(state.message);
-                    } else if (state is MaterialLoaded) {
-                      final materials = state.materials;
-                      if (materials.isEmpty) return _buildEmptyState();
-                      return _buildMaterialsList(materials);
-                    }
-                    return _buildEmptyState();
-                  },
-                ),
+    return GradientBackground(
+      child: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: BlocBuilder<MaterialBloc, StudyMaterialState>(
+                builder: (context, state) {
+                  if (state is MaterialLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    );
+                  } else if (state is MaterialError) {
+                    return _buildErrorState(state.message);
+                  } else if (state is MaterialLoaded) {
+                    if (state.materials.isEmpty) return _buildEmptyState();
+                    return _buildMaterialsList(context, state.materials);
+                  }
+                  return _buildEmptyState();
+                },
               ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showUploadSnack(),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.upload_file_rounded, color: Colors.white),
-        label: const Text(
-          'Upload',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
       ),
     );
@@ -143,7 +224,12 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+      padding: EdgeInsets.fromLTRB(
+        context.horizontalPadding,
+        20,
+        context.horizontalPadding,
+        8,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -154,10 +240,10 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
                 shaderCallback: (bounds) => const LinearGradient(
                   colors: [AppColors.primary, AppColors.accentLight],
                 ).createShader(bounds),
-                child: const Text(
+                child: Text(
                   'Study Hub',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: context.isDesktop ? 32 : 28,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     letterSpacing: -0.5,
@@ -171,7 +257,6 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
               ),
             ],
           ),
-          // Notification / group chat actions
           Row(
             children: [
               _headerAction(
@@ -213,14 +298,43 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
     );
   }
 
-  Widget _buildMaterialsList(List materials) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+  Widget _buildMaterialsList(
+    BuildContext context,
+    List<Map<String, dynamic>> materials,
+  ) {
+    final crossAxisCount = context.isDesktop
+        ? 3
+        : context.isTablet
+        ? 2
+        : 1;
+    final padding = EdgeInsets.fromLTRB(
+      context.horizontalPadding,
+      8,
+      context.horizontalPadding,
+      100,
+    );
+
+    if (crossAxisCount == 1) {
+      return ListView.builder(
+        padding: padding,
+        itemCount: materials.length,
+        itemBuilder: (context, index) =>
+            _MaterialCard(material: materials[index]),
+      );
+    }
+
+    // Grid for tablet+
+    return GridView.builder(
+      padding: padding,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 2.6,
+      ),
       itemCount: materials.length,
-      itemBuilder: (context, index) {
-        final m = materials[index];
-        return _MaterialCard(material: m);
-      },
+      itemBuilder: (context, index) =>
+          _MaterialCard(material: materials[index]),
     );
   }
 
@@ -284,16 +398,12 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
       ),
     );
   }
-
-  void _showUploadSnack() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Upload feature coming soon')));
-  }
 }
 
+// ─── Material Card ────────────────────────────────────────────────────────────
+
 class _MaterialCard extends StatelessWidget {
-  final Map material;
+  final Map<String, dynamic> material;
   const _MaterialCard({required this.material});
 
   IconData _iconForType(String? type) {
@@ -349,7 +459,7 @@ class _MaterialCard extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.12),
+            color: iconColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(_iconForType(type), color: iconColor, size: 22),
@@ -364,15 +474,12 @@ class _MaterialCard extends StatelessWidget {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: Row(
+          child: Wrap(
+            spacing: 6,
             children: [
               _chip(material['course_name'] ?? 'Unknown'),
-              const SizedBox(width: 8),
               _chip('Sem ${material['semester'] ?? '?'}'),
-              if (type != null) ...[
-                const SizedBox(width: 8),
-                _chip(type.toUpperCase(), color: iconColor),
-              ],
+              if (type != null) _chip(type.toUpperCase(), color: iconColor),
             ],
           ),
         ),
@@ -380,7 +487,7 @@ class _MaterialCard extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(
@@ -389,7 +496,6 @@ class _MaterialCard extends StatelessWidget {
             size: 18,
           ),
         ),
-        onTap: () {},
       ),
     );
   }
@@ -398,7 +504,7 @@ class _MaterialCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.textMuted).withOpacity(0.1),
+        color: (color ?? AppColors.textMuted).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

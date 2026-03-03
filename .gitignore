@@ -49,3 +49,4 @@ dist/
 # Backend env & secrets
 backend/.env
 backend/**/.env
+backend/firebase-service-account.json

@@ -79,7 +79,7 @@ async def ask_question(
         # 3. Generate Answer via LLM using Modern Runnable API
         try:
             llm = ChatGoogleGenerativeAI(
-                model="gemini-pro",
+                model="gemini-1.5-flash",
                 google_api_key=GEMINI_API_KEY
             )
             

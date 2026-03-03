@@ -27,6 +27,7 @@ class User(Base):
     bio = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
+    fcm_token = Column(String, nullable=True)  # Firebase Cloud Messaging token
 
     from sqlalchemy.orm import relationship
     materials = relationship("Material", back_populates="uploader")

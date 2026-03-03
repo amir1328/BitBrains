@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Brand
-  static const Color primary = Color(0xFF6366F1); // Indigo-500
-  static const Color primaryDark = Color(0xFF4F46E5); // Indigo-600
-  static const Color accent = Color(0xFF8B5CF6); // Violet-500
-  static const Color accentLight = Color(0xFFA78BFA); // Violet-400
+  // Brand — Sky Blue / Cyan (no purples)
+  static const Color primary = Color(0xFF0EA5E9); // Sky-500
+  static const Color primaryDark = Color(0xFF0284C7); // Sky-600
+  static const Color accent = Color(0xFF06B6D4); // Cyan-500
+  static const Color accentLight = Color(0xFF22D3EE); // Cyan-400
 
   // Success / Gold
   static const Color gold = Color(0xFFFFB800);
   static const Color goldLight = Color(0xFFFFD566);
   static const Color green = Color(0xFF22C55E);
 
-  // Dark Theme Surfaces
-  static const Color darkBg = Color(0xFF0F0F1A);
-  static const Color darkSurface = Color(0xFF1A1A2E);
-  static const Color darkCard = Color(0xFF16213E);
-  static const Color darkCardHover = Color(0xFF1E2A4A);
+  // Dark Theme Surfaces — pure cold-grey, no purple tint
+  static const Color darkBg = Color(0xFF080C12); // near-black slate
+  static const Color darkSurface = Color(0xFF0F1623); // dark slate
+  static const Color darkCard = Color(0xFF141D2E); // card surface
+  static const Color darkCardHover = Color(0xFF1A2540); // highlighted card
 
   // Text
   static const Color textPrimary = Color(0xFFF1F5F9);
@@ -27,7 +27,7 @@ class AppColors {
   // Accents for timetable
   static const Color timeMorning = Color(0xFF22C55E);
   static const Color timeAfternoon = Color(0xFFF59E0B);
-  static const Color timeEvening = Color(0xFF6366F1);
+  static const Color timeEvening = Color(0xFF0EA5E9); // was purple, now sky
 
   // Gradients
   static const Gradient brandGradient = LinearGradient(
@@ -41,7 +41,7 @@ class AppColors {
     end: Alignment.bottomRight,
   );
   static const Gradient backgroundGradient = LinearGradient(
-    colors: [darkBg, darkSurface, Color(0xFF16213E)],
+    colors: [darkBg, darkSurface, darkCard],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -96,7 +96,7 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF263151), width: 1),
+          side: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
         ),
       ),
 
@@ -110,11 +110,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF263151), width: 1),
+          borderSide: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF263151), width: 1),
+          borderSide: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -165,7 +165,7 @@ class AppTheme {
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
-        side: const BorderSide(color: Color(0xFF263151)),
+        side: const BorderSide(color: Color(0xFF1E2D3D)),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -206,7 +206,7 @@ class AppTheme {
 
       // Divider
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF263151),
+        color: Color(0xFF1E2D3D),
         thickness: 1,
         space: 1,
       ),
@@ -411,7 +411,7 @@ class GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.darkCard.withOpacity(0.8),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF263151), width: 1),
+        border: Border.all(color: const Color(0xFF1E2D3D), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -440,7 +440,7 @@ class BitBrainsLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3D2E8C).withValues(alpha: 0.45),
+            color: const Color(0xFF0284C7).withValues(alpha: 0.35),
             blurRadius: 28,
             spreadRadius: 2,
             offset: const Offset(0, 8),

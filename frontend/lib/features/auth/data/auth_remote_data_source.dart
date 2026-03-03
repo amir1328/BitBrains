@@ -29,4 +29,19 @@ class AuthRemoteDataSource {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
+    final response = await apiClient.dio.post(
+      '/auth/refresh',
+      data: {'refresh_token': refreshToken},
+    );
+    return response.data;
+  }
+
+  Future<void> updateFcmToken(String fcmToken) async {
+    await apiClient.dio.put(
+      '/users/me/fcm-token',
+      data: {'fcm_token': fcmToken},
+    );
+  }
 }
