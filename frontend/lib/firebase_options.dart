@@ -5,15 +5,14 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
+  static FirebaseOptions? get currentPlatform {
     if (kIsWeb) {
       return web;
     }
-    // Android is handled by google-services.json natively.
-    // iOS is handled by GoogleService-Info.plist natively.
-    throw UnsupportedError(
-      'DefaultFirebaseOptions are not supported for this platform.',
-    );
+    // Return null for other platforms (Android/iOS) so they
+    // correctly fall back to using their native configuration files
+    // (google-services.json / GoogleService-Info.plist).
+    return null;
   }
 
   static const FirebaseOptions web = FirebaseOptions(
