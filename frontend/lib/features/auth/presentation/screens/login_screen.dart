@@ -29,11 +29,11 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.15),
+      begin: Offset(0, 0.15),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
@@ -85,13 +85,13 @@ class _LoginScreenState extends State<LoginScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const BitBrainsLogo(size: 120),
-                const SizedBox(height: 32),
+                BitBrainsLogo(size: 120),
+                SizedBox(height: 32),
                 ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
+                  shaderCallback: (bounds) => LinearGradient(
                     colors: [AppColors.primary, AppColors.accentLight],
                   ).createShader(bounds),
-                  child: const Text(
+                  child: Text(
                     'BitBrains',
                     style: TextStyle(
                       fontSize: 56,
@@ -101,15 +101,15 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Text(
+                SizedBox(height: 12),
+                Text(
                   'AI & DS Department Platform',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                     fontSize: 18,
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
                 _featureBullet(
                   Icons.auto_stories_outlined,
                   'Smart Study Materials',
@@ -131,10 +131,10 @@ class _LoginScreenState extends State<LoginScreen>
         Container(
           width: 460,
           height: double.infinity,
-          color: AppColors.darkSurface,
+          color: Theme.of(context).colorScheme.surface,
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(48),
+              padding: EdgeInsets.all(48),
               child: _buildForm(),
             ),
           ),
@@ -145,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _featureBullet(IconData icon, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -158,11 +158,11 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             child: Icon(icon, size: 16, color: AppColors.primary),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 15,
               fontWeight: FontWeight.w500,
             ),
@@ -182,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen>
           vertical: 32,
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: BoxConstraints(maxWidth: 480),
           child: FadeTransition(
             opacity: _fadeAnim,
             child: SlideTransition(
@@ -190,13 +190,13 @@ class _LoginScreenState extends State<LoginScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const BitBrainsLogo(size: 80),
-                  const SizedBox(height: 28),
+                  BitBrainsLogo(size: 80),
+                  SizedBox(height: 28),
                   ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
+                    shaderCallback: (bounds) => LinearGradient(
                       colors: [AppColors.primary, AppColors.accentLight],
                     ).createShader(bounds),
-                    child: const Text(
+                    child: Text(
                       'BitBrains',
                       style: TextStyle(
                         fontSize: 36,
@@ -206,15 +206,13 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'AI & DS Department Platform',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                   _buildForm(),
-                  const SizedBox(height: 24),
-                  _buildRegisterLink(),
                 ],
               ),
             ),
@@ -237,30 +235,30 @@ class _LoginScreenState extends State<LoginScreen>
               'Welcome back',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Sign in to continue',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Email address',
                 prefixIcon: Icon(Icons.email_outlined),
               ),
               validator: (v) => v!.isEmpty ? 'Enter your email' : null,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
               obscureText: !_passwordVisible,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                prefixIcon: Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _passwordVisible
@@ -273,7 +271,6 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               validator: (v) => v!.isEmpty ? 'Enter your password' : null,
             ),
-            const SizedBox(height: 28),
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) => GradientButton(
                 label: 'Sign In',
@@ -282,27 +279,10 @@ class _LoginScreenState extends State<LoginScreen>
                 onPressed: _onLoginPressed,
               ),
             ),
-            const SizedBox(height: 16),
-            _buildRegisterLink(),
+            SizedBox(height: 16),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          "Don't have an account?",
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        TextButton(
-          onPressed: () => context.push('/register'),
-          child: const Text('Create one'),
-        ),
-      ],
     );
   }
 

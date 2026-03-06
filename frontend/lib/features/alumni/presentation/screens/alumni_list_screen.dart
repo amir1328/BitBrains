@@ -7,7 +7,9 @@ import '../../logic/bloc/alumni_state.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class AlumniListScreen extends StatefulWidget {
-  const AlumniListScreen({super.key});
+  final bool canEdit;
+
+  const AlumniListScreen({super.key, this.canEdit = false});
 
   @override
   State<AlumniListScreen> createState() => _AlumniListScreenState();
@@ -40,8 +42,8 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.darkSurface,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
@@ -59,68 +61,76 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         colors: [AppColors.primary, AppColors.accent],
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.people_rounded,
                       color: Colors.white,
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  const Text(
+                  SizedBox(width: 14),
+                  Text(
                     'Update Alumni Profile',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               TextField(
                 controller: companyController,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
                   labelText: 'Current Company',
                   prefixIcon: Icon(Icons.business_outlined),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               TextField(
                 controller: titleController,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
                   labelText: 'Job Title',
                   prefixIcon: Icon(Icons.work_outline_rounded),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               TextField(
                 controller: yearController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
                   labelText: 'Graduation Year',
                   prefixIcon: Icon(Icons.school_outlined),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               TextField(
                 controller: linkedinController,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
                   labelText: 'LinkedIn URL',
                   prefixIcon: Icon(Icons.link_rounded),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               GradientButton(
                 label: 'Save Profile',
                 icon: Icons.save_rounded,
@@ -154,7 +164,7 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                padding: EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -162,10 +172,10 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
+                          shaderCallback: (bounds) => LinearGradient(
                             colors: [AppColors.primary, AppColors.accentLight],
                           ).createShader(bounds),
-                          child: const Text(
+                          child: Text(
                             'Alumni Network',
                             style: TextStyle(
                               fontSize: 28,
@@ -175,53 +185,58 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
+                        SizedBox(height: 2),
+                        Text(
                           'Connect with your seniors',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                       ],
                     ),
-                    GestureDetector(
-                      onTap: _showUpdateProfileDialog,
-                      child: Tooltip(
-                        message: 'Update Alumni Profile',
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.darkCard,
-                            borderRadius: BorderRadius.circular(12),
-                            border: const Border.fromBorderSide(
-                              BorderSide(color: Color(0xFF263151)),
+                    if (widget.canEdit)
+                      GestureDetector(
+                        onTap: _showUpdateProfileDialog,
+                        child: Tooltip(
+                          message: 'Update Alumni Profile',
+                          child: Container(
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.fromBorderSide(
+                                BorderSide(color: Color(0xFF263151)),
+                              ),
                             ),
-                          ),
-                          child: const Icon(
-                            Icons.edit_rounded,
-                            size: 18,
-                            color: AppColors.textSecondary,
+                            child: Icon(
+                              Icons.edit_rounded,
+                              size: 18,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Expanded(
                 child: BlocConsumer<AlumniBloc, AlumniState>(
                   listener: (context, state) {
                     if (state is AlumniProfileUpdateSuccess) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile updated!')),
+                        SnackBar(content: Text('Profile updated!')),
                       );
                     }
                   },
                   builder: (context, state) {
                     if (state is AlumniLoading) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primary,
                         ),
@@ -231,7 +246,7 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                         return _buildEmptyState();
                       }
                       return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                        padding: EdgeInsets.fromLTRB(16, 8, 16, 80),
                         itemCount: state.alumni.length,
                         itemBuilder: (ctx, i) => _AlumniCard(
                           alum: state.alumni[i],
@@ -243,13 +258,15 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                       return Center(
                         child: Text(
                           'Error: ${state.message}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
                           ),
                         ),
                       );
                     }
-                    return const SizedBox.shrink();
+                    return SizedBox.shrink();
                   },
                 ),
               ),
@@ -266,31 +283,34 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.darkCard,
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF263151)),
+              border: Border.all(color: Color(0xFF263151)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.people_outline_rounded,
               size: 40,
-              color: AppColors.textMuted,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'No alumni found',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Alumni will appear here once they register',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -315,12 +335,12 @@ class _AlumniCard extends StatelessWidget {
     final gradYear = alum['graduation_year'];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(18),
-        border: const Border.fromBorderSide(
+        border: Border.fromBorderSide(
           BorderSide(color: Color(0xFF263151), width: 1),
         ),
       ),
@@ -331,7 +351,7 @@ class _AlumniCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppColors.primary, AppColors.accent],
               ),
               shape: BoxShape.circle,
@@ -339,7 +359,7 @@ class _AlumniCard extends StatelessWidget {
             child: Center(
               child: Text(
                 initials,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -347,7 +367,7 @@ class _AlumniCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
 
           // Info
           Expanded(
@@ -356,31 +376,28 @@ class _AlumniCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 if (alum['job_title'] != null ||
                     alum['current_company'] != null) ...[
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     '${alum['job_title'] ?? 'N/A'} at ${alum['current_company'] ?? 'N/A'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 if (gradYear != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.accent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(7),
@@ -390,7 +407,7 @@ class _AlumniCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Class of $gradYear',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         color: AppColors.accent,
                         fontWeight: FontWeight.w700,
@@ -410,7 +427,7 @@ class _AlumniCard extends StatelessWidget {
                   AppColors.primary,
                   () => onLinkedIn(alum['linkedin_url']),
                 ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               if (alum['user_email'] != null)
                 _actionButton(
                   Icons.email_outlined,

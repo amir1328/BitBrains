@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         listener: (context, state) {
           if (state is AuthUnauthenticated) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text('Registration successful! Please sign in.'),
               ),
             );
@@ -58,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: GradientBackground(
           child: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -68,31 +68,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.darkCard,
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
-                          border: const Border.fromBorderSide(
+                          border: Border.fromBorderSide(
                             BorderSide(color: Color(0xFF263151)),
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           size: 16,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
 
                     // Header
-                    const BitBrainsLogo(size: 56),
-                    const SizedBox(height: 20),
+                    BitBrainsLogo(size: 56),
+                    SizedBox(height: 20),
                     ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
+                      shaderCallback: (bounds) => LinearGradient(
                         colors: [AppColors.primary, AppColors.accentLight],
                       ).createShader(bounds),
-                      child: const Text(
+                      child: Text(
                         'Create Account',
                         style: TextStyle(
                           fontSize: 30,
@@ -102,12 +102,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Join the AI & DS Department community',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28),
 
                     // Form Card
                     GlassCard(
@@ -115,43 +115,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _sectionLabel('Personal Info'),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           TextFormField(
                             controller: _nameController,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Full Name',
                               prefixIcon: Icon(Icons.person_outline_rounded),
                             ),
                             validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Email Address',
                               prefixIcon: Icon(Icons.email_outlined),
                             ),
                             validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: !_passwordVisible,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon: const Icon(
-                                Icons.lock_outline_rounded,
-                              ),
+                              prefixIcon: Icon(Icons.lock_outline_rounded),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _passwordVisible
@@ -165,10 +163,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
 
                           _sectionLabel('Role'),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
 
                           // Role chips
                           Wrap(
@@ -194,34 +192,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
 
                           if (_role == 'student') ...[
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20),
                             _sectionLabel('Student Details'),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             TextFormField(
                               controller: _yearController,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Year of Study (1–4)',
                                 prefixIcon: Icon(Icons.calendar_today_outlined),
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             TextFormField(
                               controller: _rollNumberController,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Roll Number',
                                 prefixIcon: Icon(Icons.numbers_rounded),
                               ),
                             ),
                           ],
 
-                          const SizedBox(height: 28),
+                          SizedBox(height: 28),
 
                           BlocBuilder<AuthBloc, AuthState>(
                             builder: (context, state) {
@@ -237,7 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -247,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         TextButton(
                           onPressed: () => context.go('/login'),
-                          child: const Text('Sign In'),
+                          child: Text('Sign In'),
                         ),
                       ],
                     ),
@@ -264,10 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _sectionLabel(String text) {
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: AppColors.textMuted,
+        color: Theme.of(context).textTheme.bodySmall?.color,
         letterSpacing: 1.2,
       ),
     );
@@ -278,25 +276,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return GestureDetector(
       onTap: () => setState(() => _role = value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        duration: Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? const LinearGradient(
-                  colors: [AppColors.primary, AppColors.accent],
-                )
+              ? LinearGradient(colors: [AppColors.primary, AppColors.accent])
               : null,
-          color: isSelected ? null : AppColors.darkCardHover,
+          color: isSelected ? null : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.transparent : const Color(0xFF263151),
+            color: isSelected ? Colors.transparent : Color(0xFF263151),
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.3),
                     blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ]
               : [],
@@ -307,15 +303,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+              color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).textTheme.bodyMedium?.color,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           ],

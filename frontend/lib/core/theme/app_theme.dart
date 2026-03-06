@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Brand — Sky Blue / Cyan (no purples)
+  // Brand — Sky Blue / Cyan
   static const Color primary = Color(0xFF0EA5E9); // Sky-500
   static const Color primaryDark = Color(0xFF0284C7); // Sky-600
   static const Color accent = Color(0xFF06B6D4); // Cyan-500
@@ -13,35 +13,41 @@ class AppColors {
   static const Color goldLight = Color(0xFFFFD566);
   static const Color green = Color(0xFF22C55E);
 
-  // Dark Theme Surfaces — pure cold-grey, no purple tint
-  static const Color darkBg = Color(0xFF080C12); // near-black slate
-  static const Color darkSurface = Color(0xFF0F1623); // dark slate
-  static const Color darkCard = Color(0xFF141D2E); // card surface
-  static const Color darkCardHover = Color(0xFF1A2540); // highlighted card
+  // --- DARK THEME (STRICTLY PURE BLACK) ---
+  static const Color darkBg = Colors.black; // Pure Black Background
+  static const Color darkSurface = Color(
+    0xFF0A0A0A,
+  ); // Very near black for app bar/nav
+  static const Color darkCard = Color(
+    0xFF111111,
+  ); // Slightly lighter for cards to distinguish
+  static const Color darkCardBorder = Color(0xFF222222);
+  static const Color darkCardHover = Color(0xFF1A1A1A);
 
-  // Text
-  static const Color textPrimary = Color(0xFFF1F5F9);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  // --- LIGHT THEME (STRICTLY PURE WHITE) ---
+  static const Color lightBg = Colors.white; // Pure White Background
+  static const Color lightSurface = Color(0xFFFFFFFF); // Pure white app bar/nav
+  static const Color lightCard = Color(0xFFFAFAFA); // Off-white for cards
+  static const Color lightCardBorder = Color(0xFFE5E7EB);
+  static const Color lightCardHover = Color(0xFFF3F4F6);
+
+  // Text Colors
+  static const Color textDarkPrimary = Color(0xFFF1F5F9);
+  static const Color textDarkSecondary = Color(0xFF94A3B8);
+  static const Color textDarkMuted = Color(0xFF64748B);
+
+  static const Color textLightPrimary = Color(0xFF0F172A);
+  static const Color textLightSecondary = Color(0xFF475569);
+  static const Color textLightMuted = Color(0xFF94A3B8);
 
   // Accents for timetable
   static const Color timeMorning = Color(0xFF22C55E);
   static const Color timeAfternoon = Color(0xFFF59E0B);
-  static const Color timeEvening = Color(0xFF0EA5E9); // was purple, now sky
+  static const Color timeEvening = Color(0xFF0EA5E9);
 
-  // Gradients
+  // Legacy gradients (kept for buttons or specific elements, removed from background)
   static const Gradient brandGradient = LinearGradient(
     colors: [primary, accent],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-  static const Gradient btmNavGradient = LinearGradient(
-    colors: [darkSurface, darkCard],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-  static const Gradient backgroundGradient = LinearGradient(
-    colors: [darkBg, darkSurface, darkCard],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -53,6 +59,7 @@ class AppColors {
 }
 
 class AppTheme {
+  // ─── DARK THEME ─────────────────────────────────────────────────────────────
   static ThemeData get darkTheme {
     final baseTextTheme = GoogleFonts.spaceGroteskTextTheme(
       ThemeData(brightness: Brightness.dark).textTheme,
@@ -66,41 +73,38 @@ class AppTheme {
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
         surface: AppColors.darkSurface,
-        onSurface: AppColors.textPrimary,
+        onSurface: AppColors.textDarkPrimary,
         primary: AppColors.primary,
         primaryContainer: AppColors.darkCard,
         secondary: AppColors.accent,
         tertiary: AppColors.gold,
       ),
 
-      // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkSurface,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.textDarkPrimary,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.spaceGrotesk(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           letterSpacing: -0.5,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: const IconThemeData(color: AppColors.textDarkPrimary),
         surfaceTintColor: Colors.transparent,
       ),
 
-      // Cards
       cardTheme: CardThemeData(
         color: AppColors.darkCard,
         elevation: 0,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
+          side: const BorderSide(color: AppColors.darkCardBorder, width: 1),
         ),
       ),
 
-      // Input fields
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkCard,
@@ -110,11 +114,17 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
+          borderSide: const BorderSide(
+            color: AppColors.darkCardBorder,
+            width: 1,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF1E2D3D), width: 1),
+          borderSide: const BorderSide(
+            color: AppColors.darkCardBorder,
+            width: 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -124,13 +134,12 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        hintStyle: const TextStyle(color: AppColors.textMuted),
-        prefixIconColor: AppColors.textSecondary,
-        suffixIconColor: AppColors.textSecondary,
+        labelStyle: const TextStyle(color: AppColors.textDarkSecondary),
+        hintStyle: const TextStyle(color: AppColors.textDarkMuted),
+        prefixIconColor: AppColors.textDarkSecondary,
+        suffixIconColor: AppColors.textDarkSecondary,
       ),
 
-      // Elevated Button
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -149,7 +158,6 @@ class AppTheme {
         ),
       ),
 
-      // Text Button
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.accentLight,
@@ -157,36 +165,34 @@ class AppTheme {
         ),
       ),
 
-      // Chip
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkCardHover,
         labelStyle: const TextStyle(
-          color: AppColors.textSecondary,
+          color: AppColors.textDarkSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
-        side: const BorderSide(color: Color(0xFF1E2D3D)),
+        side: const BorderSide(color: AppColors.darkCardBorder),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
-      // Tab Bar
       tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
-        unselectedLabelColor: AppColors.textMuted,
+        unselectedLabelColor: AppColors.textDarkMuted,
         indicatorColor: AppColors.primary,
         labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         unselectedLabelStyle: TextStyle(
           fontWeight: FontWeight.w400,
           fontSize: 13,
         ),
+        dividerColor: AppColors.darkCardBorder,
       ),
 
-      // Bottom Navigation Bar
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.darkSurface,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
+        unselectedItemColor: AppColors.textDarkMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 16,
         selectedLabelStyle: TextStyle(
@@ -196,7 +202,6 @@ class AppTheme {
         unselectedLabelStyle: TextStyle(fontSize: 11),
       ),
 
-      // FloatingActionButton
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -204,116 +209,359 @@ class AppTheme {
         shape: CircleBorder(),
       ),
 
-      // Divider
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF1E2D3D),
+        color: AppColors.darkCardBorder,
         thickness: 1,
         space: 1,
       ),
 
-      // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.darkSurface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titleTextStyle: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
         contentTextStyle: GoogleFonts.spaceGrotesk(
-          color: AppColors.textSecondary,
+          color: AppColors.textDarkSecondary,
           fontSize: 14,
         ),
       ),
 
-      // Snackbar
       snackBarTheme: const SnackBarThemeData(
-        backgroundColor: AppColors.darkCardHover,
-        contentTextStyle: TextStyle(color: AppColors.textPrimary),
+        backgroundColor: AppColors.darkCardBorder,
+        contentTextStyle: TextStyle(color: AppColors.textDarkPrimary),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
         behavior: SnackBarBehavior.floating,
       ),
 
-      // List Tile
       listTileTheme: const ListTileThemeData(
-        iconColor: AppColors.textSecondary,
-        textColor: AppColors.textPrimary,
+        iconColor: AppColors.textDarkSecondary,
+        textColor: AppColors.textDarkPrimary,
       ),
 
-      // Text Styles — Space Grotesk throughout
       textTheme: baseTextTheme.copyWith(
         displayLarge: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 57,
           fontWeight: FontWeight.w800,
           letterSpacing: -1,
         ),
         headlineLarge: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 32,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
         ),
         headlineMedium: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 24,
           fontWeight: FontWeight.w700,
         ),
         headlineSmall: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
         titleLarge: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
         titleMedium: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
         bodyLarge: GoogleFonts.spaceGrotesk(
-          color: AppColors.textPrimary,
+          color: AppColors.textDarkPrimary,
           fontSize: 16,
         ),
         bodyMedium: GoogleFonts.spaceGrotesk(
-          color: AppColors.textSecondary,
+          color: AppColors.textDarkSecondary,
           fontSize: 14,
         ),
         bodySmall: GoogleFonts.spaceGrotesk(
-          color: AppColors.textMuted,
+          color: AppColors.textDarkMuted,
           fontSize: 12,
         ),
         labelLarge: GoogleFonts.spaceGrotesk(
-          color: AppColors.textSecondary,
+          color: AppColors.textDarkSecondary,
           fontSize: 14,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
       ),
-      iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 22),
+      iconTheme: const IconThemeData(
+        color: AppColors.textDarkSecondary,
+        size: 22,
+      ),
+    );
+  }
+
+  // ─── LIGHT THEME ────────────────────────────────────────────────────────────
+  static ThemeData get lightTheme {
+    final baseTextTheme = GoogleFonts.spaceGroteskTextTheme(
+      ThemeData(brightness: Brightness.light).textTheme,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.lightBg,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.light,
+        surface: AppColors.lightSurface,
+        onSurface: AppColors.textLightPrimary,
+        primary: AppColors.primary,
+        primaryContainer: AppColors.lightCard,
+        secondary: AppColors.primaryDark,
+        tertiary: AppColors.gold,
+      ),
+
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.lightSurface,
+        foregroundColor: AppColors.textLightPrimary,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.spaceGrotesk(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textLightPrimary,
+          letterSpacing: -0.5,
+        ),
+        iconTheme: const IconThemeData(color: AppColors.textLightPrimary),
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      cardTheme: CardThemeData(
+        color: AppColors.lightCard,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.lightCardBorder, width: 1),
+        ),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.lightCard,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: AppColors.lightCardBorder,
+            width: 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: AppColors.lightCardBorder,
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        labelStyle: const TextStyle(color: AppColors.textLightSecondary),
+        hintStyle: const TextStyle(color: AppColors.textLightMuted),
+        prefixIconColor: AppColors.textLightSecondary,
+        suffixIconColor: AppColors.textLightSecondary,
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: GoogleFonts.spaceGrotesk(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primaryDark,
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.lightCardHover,
+        labelStyle: const TextStyle(
+          color: AppColors.textLightSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        side: const BorderSide(color: AppColors.lightCardBorder),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+
+      tabBarTheme: const TabBarThemeData(
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textLightMuted,
+        indicatorColor: AppColors.primary,
+        labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w400,
+          fontSize: 13,
+        ),
+        dividerColor: AppColors.lightCardBorder,
+      ),
+
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: AppColors.lightSurface,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textLightMuted,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(fontSize: 11),
+      ),
+
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: CircleBorder(),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: AppColors.lightCardBorder,
+        thickness: 1,
+        space: 1,
+      ),
+
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.lightSurface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightSecondary,
+          fontSize: 14,
+        ),
+      ),
+
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: AppColors.lightCardBorder,
+        contentTextStyle: TextStyle(color: AppColors.textLightPrimary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+
+      listTileTheme: const ListTileThemeData(
+        iconColor: AppColors.textLightSecondary,
+        textColor: AppColors.textLightPrimary,
+      ),
+
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 57,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1,
+        ),
+        headlineLarge: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 32,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+        ),
+        headlineSmall: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightPrimary,
+          fontSize: 16,
+        ),
+        bodyMedium: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightSecondary,
+          fontSize: 14,
+        ),
+        bodySmall: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightMuted,
+          fontSize: 12,
+        ),
+        labelLarge: GoogleFonts.spaceGrotesk(
+          color: AppColors.textLightSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+      iconTheme: const IconThemeData(
+        color: AppColors.textLightSecondary,
+        size: 22,
+      ),
     );
   }
 }
 
 // --- Reusable Widgets ---
 
-/// A full-page gradient background container
+/// A full-page gradient background container (REPURPOSED as a strict colored background matching the theme)
 class GradientBackground extends StatelessWidget {
   final Widget child;
   const GradientBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-      child: child,
-    );
+    // If it's light mode, pure white. If dark mode, pure black.
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? AppColors.darkBg : AppColors.lightBg;
+
+    return Container(color: color, child: child);
   }
 }
 
@@ -406,15 +654,24 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: padding ?? const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.darkCard.withOpacity(0.8),
+        color: isDark
+            ? AppColors.darkCard.withOpacity(0.8)
+            : AppColors.lightCard.withOpacity(0.8),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF1E2D3D), width: 1),
+        border: Border.all(
+          color: isDark ? AppColors.darkCardBorder : AppColors.lightCardBorder,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
             blurRadius: 30,
             offset: const Offset(0, 10),
           ),
@@ -440,7 +697,7 @@ class BitBrainsLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+            color: const Color(0xFF0284C7).withOpacity(0.35),
             blurRadius: 28,
             spreadRadius: 2,
             offset: const Offset(0, 8),

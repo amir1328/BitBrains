@@ -21,7 +21,7 @@ async def websocket_endpoint(
     user_id: int,
     db: Session = Depends(database.get_db)
 ):
-    await manager.connect(websocket, room_id)
+    await manager.connect(websocket, room_id, user_id)
     try:
         while True:
             data = await websocket.receive_text()
@@ -57,10 +57,14 @@ async def websocket_endpoint(
                 # Push notification to offline users (non-blocking)
                 try:
                     from app.services.notification_service import send_multicast
+                    online_user_ids = manager.get_online_users(room_id)
+                    
+                    # exclude the sender and anyone currently online in this WebSockets room
                     other_tokens = [
                         u.fcm_token for u in db.query(models.user.User)
                         .filter(models.user.User.fcm_token.isnot(None))
                         .filter(models.user.User.id != user_id)
+                        .filter(models.user.User.id.notin_(online_user_ids))
                         .all()
                     ]
                     if other_tokens:

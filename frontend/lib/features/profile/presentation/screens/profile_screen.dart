@@ -1,10 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../features/auth/logic/bloc/auth_bloc.dart';
+import '../../../../features/auth/logic/bloc/auth_event.dart';
 import '../../logic/bloc/profile_bloc.dart';
 import '../../logic/bloc/profile_event.dart';
 import '../../logic/bloc/profile_state.dart';
-import '../../../../core/theme/app_theme.dart';
+import 'add_user_sheet.dart';
+import '../widgets/change_password_sheet.dart';
+
+// ─── Role helpers ─────────────────────────────────────────────────────────────
+
+String _roleLabel(String? raw) {
+  switch (raw?.toLowerCase()) {
+    case 'staff':
+      return 'Faculty';
+    case 'hod':
+      return 'HOD';
+    case 'alumni':
+      return 'Alumni';
+    default:
+      return 'Student';
+  }
+}
+
+Color _roleColor(String? raw) {
+  switch (raw?.toLowerCase()) {
+    case 'staff':
+      return AppColors.accent;
+    case 'hod':
+      return AppColors.primary;
+    case 'alumni':
+      return AppColors.timeMorning;
+    default:
+      return AppColors.timeAfternoon;
+  }
+}
+
+IconData _roleIcon(String? raw) {
+  switch (raw?.toLowerCase()) {
+    case 'staff':
+      return Icons.badge_rounded;
+    case 'hod':
+      return Icons.supervisor_account_rounded;
+    case 'alumni':
+      return Icons.work_rounded;
+    default:
+      return Icons.school_rounded;
+  }
+}
+
+// ─── Profile Screen ───────────────────────────────────────────────────────────
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _bioController = TextEditingController();
   final _phoneController = TextEditingController();
   final _yearController = TextEditingController();
+  final _companyCtrl = TextEditingController(); // alumni
+  final _gradYearCtrl = TextEditingController(); // alumni
 
   @override
   void initState() {
@@ -30,7 +78,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _bioController.dispose();
     _phoneController.dispose();
     _yearController.dispose();
+    _companyCtrl.dispose();
+    _gradYearCtrl.dispose();
     super.dispose();
+  }
+
+  void _populateControllers(Map<dynamic, dynamic> user) {
+    if (_isEditing) return; // don't overwrite while editing
+    _bioController.text = user['bio'] ?? '';
+    _phoneController.text = user['phone_number'] ?? '';
+    _yearController.text = (user['year'] ?? '').toString();
+    _companyCtrl.text = user['company'] ?? '';
+    _gradYearCtrl.text = (user['graduation_year'] ?? '').toString();
   }
 
   @override
@@ -38,11 +97,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          if (state is ProfileLoaded && !_isEditing) {
-            _bioController.text = state.user['bio'] ?? '';
-            _phoneController.text = state.user['phone_number'] ?? '';
-            _yearController.text = (state.user['year'] ?? '').toString();
-          } else if (state is ProfileError) {
+          if (state is ProfileLoaded) _populateControllers(state.user);
+          if (state is ProfileError) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
@@ -50,33 +106,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const GradientBackground(
+            return GradientBackground(
               child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
             );
-          } else if (state is ProfileLoaded) {
+          }
+          if (state is ProfileLoaded) {
             final user = state.user;
+            final role = user['role'] as String?;
             return GradientBackground(
               child: SafeArea(
                 child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: 40),
                   child: Column(
                     children: [
-                      _buildHeroHeader(context, user),
-                      _buildInfoSection(user),
-                      if (_isEditing) _buildEditSection(),
-                      _buildActionButtons(context),
+                      _buildHeroHeader(context, user, role),
+                      _buildInfoSection(user, role),
+                      if (_isEditing) _buildEditSection(role),
+                      _buildActionButtons(context, role),
                     ],
                   ),
                 ),
               ),
             );
           }
-          return const GradientBackground(
+          return GradientBackground(
             child: Center(
               child: Text(
-                'Loading profile...',
-                style: TextStyle(color: AppColors.textMuted),
+                'Loading profile…',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
               ),
             ),
           );
@@ -85,15 +146,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHeroHeader(BuildContext context, Map<dynamic, dynamic> user) {
+  // ── Hero Header ─────────────────────────────────────────────────────────────
+
+  Widget _buildHeroHeader(
+    BuildContext context,
+    Map<dynamic, dynamic> user,
+    String? role,
+  ) {
     final initials = (user['full_name'] as String? ?? 'U')
         .substring(0, 1)
         .toUpperCase();
-    final role = (user['role'] as String? ?? 'student').toUpperCase();
+    final rc = _roleColor(role);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(24, 28, 24, 28),
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFF263151))),
       ),
       child: Column(
@@ -103,18 +170,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             alignment: Alignment.bottomRight,
             children: [
               Container(
-                width: 90,
-                height: 90,
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.accent],
-                  ),
+                  gradient: LinearGradient(colors: [rc, AppColors.primary]),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
+                      color: rc.withValues(alpha: 0.4),
+                      blurRadius: 28,
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
@@ -128,9 +193,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : Center(
                         child: Text(
                           initials,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 36,
+                            fontSize: 38,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -138,12 +203,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (_isEditing)
                 Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
+                  padding: EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: rc, shape: BoxShape.circle),
+                  child: Icon(
                     Icons.camera_alt_rounded,
                     color: Colors.white,
                     size: 14,
@@ -151,78 +213,144 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
+
+          // Name
           Text(
             user['full_name'] ?? 'Guest',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          SizedBox(height: 10),
+
+          // Role + Department badges
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            alignment: WrapAlignment.center,
             children: [
-              _badgeChip(role, AppColors.primary),
-              if (user['department'] != null) ...[
-                const SizedBox(width: 8),
-                _badgeChip(user['department'], AppColors.accent),
-              ],
+              _badgeChip(_roleLabel(role), _roleIcon(role), rc),
+              if (user['department'] != null)
+                _badgeChip(
+                  user['department'] as String,
+                  Icons.apartment_rounded,
+                  AppColors.accent,
+                ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
+
+          // Email
           Text(
             user['email'] ?? '',
-            style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoSection(Map<dynamic, dynamic> user) {
+  // ── Info Section (role-specific) ────────────────────────────────────────────
+
+  Widget _buildInfoSection(Map<dynamic, dynamic> user, String? role) {
+    final isStudent = role == 'student' || role == null;
+    final isStaff = role == 'staff' || role == 'hod';
+    final isAlumni = role == 'alumni';
+
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionLabel('Account Info'),
-          const SizedBox(height: 12),
-          _infoCard([
-            _InfoRow(
-              icon: Icons.badge_outlined,
-              label: 'Roll No',
-              value: user['roll_number'] ?? '—',
-            ),
-            _InfoRow(
-              icon: Icons.school_outlined,
-              label: 'Year',
-              value: user['year']?.toString() ?? '—',
-            ),
-            _InfoRow(
-              icon: Icons.phone_outlined,
-              label: 'Phone',
-              value: user['phone_number'] ?? '—',
-            ),
-          ]),
-          const SizedBox(height: 20),
-          const _SectionLabel('Bio'),
-          const SizedBox(height: 12),
+          // ── Student-specific ──
+          if (isStudent) ...[
+            _SectionLabel('Academic Info'),
+            SizedBox(height: 12),
+            _infoCard([
+              _InfoRow(
+                icon: Icons.badge_outlined,
+                label: 'Roll No',
+                value: user['roll_number'] ?? '—',
+              ),
+              _InfoRow(
+                icon: Icons.school_outlined,
+                label: 'Year',
+                value: user['year']?.toString() ?? '—',
+              ),
+              _InfoRow(
+                icon: Icons.phone_outlined,
+                label: 'Phone',
+                value: user['phone_number'] ?? '—',
+              ),
+            ]),
+          ],
+
+          // ── Staff / HOD specific ──
+          if (isStaff) ...[
+            _SectionLabel('Faculty Info'),
+            SizedBox(height: 12),
+            _infoCard([
+              _InfoRow(
+                icon: Icons.apartment_rounded,
+                label: 'Department',
+                value: user['department'] ?? '—',
+              ),
+              _InfoRow(
+                icon: Icons.phone_outlined,
+                label: 'Phone',
+                value: user['phone_number'] ?? '—',
+              ),
+            ]),
+          ],
+
+          // ── Alumni specific ──
+          if (isAlumni) ...[
+            _SectionLabel('Career Info'),
+            SizedBox(height: 12),
+            _infoCard([
+              _InfoRow(
+                icon: Icons.work_rounded,
+                label: 'Company',
+                value: user['company'] ?? '—',
+              ),
+              _InfoRow(
+                icon: Icons.calendar_today,
+                label: 'Graduation Year',
+                value: user['graduation_year']?.toString() ?? '—',
+              ),
+              _InfoRow(
+                icon: Icons.phone_outlined,
+                label: 'Phone',
+                value: user['phone_number'] ?? '—',
+              ),
+            ]),
+          ],
+
+          SizedBox(height: 20),
+
+          // Bio (all roles)
+          _SectionLabel('Bio'),
+          SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.darkCard,
+              color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(16),
-              border: const Border.fromBorderSide(
+              border: Border.fromBorderSide(
                 BorderSide(color: Color(0xFF263151)),
               ),
             ),
             child: Text(
               user['bio'] ?? 'No bio added yet.',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
                 fontSize: 14,
                 height: 1.6,
               ),
@@ -233,94 +361,234 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildEditSection() {
+  // ── Edit Section (role-specific fields) ────────────────────────────────────
+
+  Widget _buildEditSection(String? role) {
+    final isStudent = role == 'student' || role == null;
+    final isStaff = role == 'staff' || role == 'hod';
+    final isAlumni = role == 'alumni';
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionLabel('Edit Profile'),
-          const SizedBox(height: 12),
+          _SectionLabel('Edit Profile'),
+          SizedBox(height: 12),
           GlassCard(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             child: Column(
               children: [
-                TextField(
-                  controller: _yearController,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Year of Study',
-                    prefixIcon: Icon(Icons.school_outlined),
+                // ── Student fields ──
+                if (isStudent) ...[
+                  _editField(
+                    _yearController,
+                    'Year of Study',
+                    Icons.school_outlined,
+                    keyboardType: TextInputType.number,
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _phoneController,
+                  SizedBox(height: 14),
+                ],
+
+                // ── Staff / HOD fields ──
+                if (isStaff) ...[SizedBox(height: 14)],
+
+                // ── Alumni fields ──
+                if (isAlumni) ...[
+                  _editField(
+                    _companyCtrl,
+                    'Current Company',
+                    Icons.work_rounded,
+                  ),
+                  SizedBox(height: 14),
+                  _editField(
+                    _gradYearCtrl,
+                    'Graduation Year',
+                    Icons.calendar_today,
+                    keyboardType: TextInputType.number,
+                  ),
+                  SizedBox(height: 14),
+                ],
+
+                // ── Common fields ──
+                _editField(
+                  _phoneController,
+                  'Phone Number',
+                  Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _bioController,
+                SizedBox(height: 14),
+                _editField(
+                  _bioController,
+                  'Bio',
+                  Icons.notes_rounded,
                   maxLines: 3,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Bio',
-                    prefixIcon: Icon(Icons.notes_rounded),
-                    alignLabelWithHint: true,
-                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _editField(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        alignLabelWithHint: maxLines > 1,
+      ),
+    );
+  }
+
+  // ── Action Buttons ───────────────────────────────────────────────────────────
+
+  Widget _buildActionButtons(BuildContext context, String? role) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
       child: Column(
         children: [
+          // Edit / Save
           GradientButton(
             label: _isEditing ? 'Save Changes' : 'Edit Profile',
             icon: _isEditing ? Icons.save_rounded : Icons.edit_rounded,
             onPressed: () {
               if (_isEditing) {
-                context.read<ProfileBloc>().add(
-                  UpdateProfile({
-                    'bio': _bioController.text,
-                    'phone_number': _phoneController.text,
-                    if (_yearController.text.isNotEmpty)
-                      'year': int.tryParse(_yearController.text),
-                  }),
-                );
+                final updates = <String, dynamic>{
+                  'bio': _bioController.text,
+                  'phone_number': _phoneController.text,
+                };
+                if (role == 'student' || role == null) {
+                  if (_yearController.text.isNotEmpty) {
+                    updates['year'] = int.tryParse(_yearController.text);
+                  }
+                }
+                if (role == 'staff' || role == 'hod') {
+                  // additional staff/hod fields can be added here
+                }
+                if (role == 'alumni') {
+                  updates['company'] = _companyCtrl.text;
+                  if (_gradYearCtrl.text.isNotEmpty) {
+                    updates['graduation_year'] = int.tryParse(
+                      _gradYearCtrl.text,
+                    );
+                  }
+                }
+                context.read<ProfileBloc>().add(UpdateProfile(updates));
               }
-              setState(() => _isEditing = !_isEditing);
+              setState(() {
+                _isEditing = !_isEditing;
+              });
             },
           ),
-          const SizedBox(height: 12),
+
+          if (role == 'hod' && !_isEditing) ...[
+            SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  showAddUserSheet(context).then((success) {
+                    if (success == true && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('User created successfully!'),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.9,
+                          ),
+                        ),
+                      );
+                    }
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary, width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: Icon(Icons.person_add_rounded, size: 18),
+                label: Text(
+                  'Add New User',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+
+          if (!_isEditing) ...[
+            SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) => const ChangePasswordSheet(),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: Icon(Icons.lock_reset_rounded, size: 18),
+                label: Text(
+                  'Change Password',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+
+          SizedBox(height: 12),
+
+          // Sign Out — properly dispatches AuthLogoutRequested
           SizedBox(
             width: double.infinity,
             height: 50,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/login'),
+              onPressed: () {
+                context.read<AuthBloc>().add(AuthLogoutRequested());
+              },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent, width: 1),
+                side: BorderSide(color: Colors.redAccent, width: 1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text(
+              icon: Icon(Icons.logout_rounded, size: 18),
+              label: Text(
                 'Sign Out',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
@@ -331,14 +599,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── Shared Widgets ───────────────────────────────────────────────────────────
+
   Widget _infoCard(List<Widget> rows) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
-        border: const Border.fromBorderSide(
-          BorderSide(color: Color(0xFF263151)),
-        ),
+        border: Border.fromBorderSide(BorderSide(color: Color(0xFF263151))),
       ),
       child: Column(
         children: rows
@@ -346,7 +614,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               (r) => Column(
                 children: [
                   r,
-                  if (rows.last != r) const Divider(height: 1, indent: 52),
+                  if (rows.last != r)
+                    Divider(height: 1, indent: 52, color: Color(0xFF263151)),
                 ],
               ),
             )
@@ -355,26 +624,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _badgeChip(String label, Color color) {
+  Widget _badgeChip(String label, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+// ─── Shared sub-widgets ───────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
@@ -389,26 +667,29 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: AppColors.textMuted,
+              color: Theme.of(context).textTheme.bodySmall?.color,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+          Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -425,10 +706,10 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: AppColors.textMuted,
+        color: Theme.of(context).textTheme.bodySmall?.color,
         letterSpacing: 1.2,
       ),
     );

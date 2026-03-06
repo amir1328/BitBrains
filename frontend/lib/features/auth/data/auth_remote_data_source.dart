@@ -38,6 +38,23 @@ class AuthRemoteDataSource {
     return response.data;
   }
 
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      await apiClient.dio.post(
+        '/auth/change-password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateFcmToken(String fcmToken) async {
     await apiClient.dio.put(
       '/users/me/fcm-token',

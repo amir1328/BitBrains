@@ -11,10 +11,14 @@ class ApiClient {
   final Dio _refreshDio;
 
   ApiClient() : _dio = Dio(_baseOptions()), _refreshDio = Dio(_baseOptions()) {
+    debugPrint('ApiClient initialized with BaseURL: ${_dio.options.baseUrl}');
     _dio.interceptors.add(
       InterceptorsWrapper(
         // Attach access token to every request
         onRequest: (options, handler) async {
+          debugPrint('DIO REQUEST: [${options.method}] ${options.uri}');
+          debugPrint('DIO HEADERS: ${options.headers}');
+
           final prefs = await SharedPreferences.getInstance();
           final token = prefs.getString(_kAccessToken);
           if (token != null) {
@@ -23,8 +27,20 @@ class ApiClient {
           return handler.next(options);
         },
 
+        onResponse: (response, handler) {
+          debugPrint(
+            'DIO RESPONSE: [${response.statusCode}] ${response.requestOptions.uri}',
+          );
+          return handler.next(response);
+        },
+
         // On 401 → try refreshing, then retry the original request once
         onError: (DioException error, handler) async {
+          debugPrint(
+            'DIO ERROR: [${error.response?.statusCode}] ${error.type} - ${error.message}',
+          );
+          debugPrint('DIO ERROR DATA: ${error.response?.data}');
+
           if (error.response?.statusCode == 401) {
             final prefs = await SharedPreferences.getInstance();
             final refreshToken = prefs.getString(_kRefreshToken);
@@ -69,15 +85,28 @@ class ApiClient {
 
 BaseOptions _baseOptions() => BaseOptions(
   baseUrl: () {
+    // Current target for cloud testing
+    const productionUrl = 'https://bitbrains-production.up.railway.app';
+
+    if (kReleaseMode) {
+      return productionUrl;
+    }
+
+    // For Debug mode, use Railway so we can test cloud integration immediately
+    return productionUrl;
+
+    /* 
+    // Fallback for local development (Emulator / Web) if needed:
     if (kIsWeb) {
-      debugPrint('ApiClient: Running on Web, using 127.0.0.1');
       return 'http://127.0.0.1:8000';
     } else {
-      debugPrint('ApiClient: Running on Mobile, using 10.0.2.2');
       return 'http://10.0.2.2:8000';
     }
+    */
   }(),
-  connectTimeout: const Duration(seconds: 10),
-  receiveTimeout: const Duration(seconds: 30),
+  connectTimeout: const Duration(
+    seconds: 15,
+  ), // Increased for cloud cold-starts
+  receiveTimeout: const Duration(seconds: 60),
   headers: {'Content-Type': 'application/json'},
 );

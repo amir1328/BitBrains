@@ -5,6 +5,9 @@ import '../../logic/bloc/material_bloc.dart';
 import '../../logic/bloc/material_bloc_definitions.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../features/auth/logic/bloc/auth_bloc.dart';
+import '../../../../features/auth/logic/bloc/auth_state.dart';
+import 'upload_material_sheet.dart';
 
 // Feature screens hosted in the bottom nav / rail
 import '../../../chat/presentation/screens/chat_screen.dart';
@@ -12,22 +15,90 @@ import '../../../timetable/presentation/screens/timetable_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../alumni/presentation/screens/alumni_list_screen.dart';
 
-// ─── Navigation destinations ──────────────────────────────────────────────────
+// ─── Role definitions ─────────────────────────────────────────────────────────
+
+enum UserRole { student, staff, hod, alumni, unknown }
+
+UserRole _parseRole(String? raw) {
+  switch (raw?.toLowerCase()) {
+    case 'student':
+      return UserRole.student;
+    case 'staff':
+      return UserRole.staff;
+    case 'hod':
+      return UserRole.hod;
+    case 'alumni':
+      return UserRole.alumni;
+    default:
+      return UserRole.unknown;
+  }
+}
 
 class _NavDest {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  const _NavDest(this.icon, this.activeIcon, this.label);
+  _NavDest(this.icon, this.activeIcon, this.label);
 }
 
-const _destinations = [
-  _NavDest(Icons.auto_stories_outlined, Icons.auto_stories, 'Materials'),
-  _NavDest(Icons.calendar_month_outlined, Icons.calendar_month, 'Timetable'),
-  _NavDest(Icons.psychology_outlined, Icons.psychology, 'AI Chat'),
-  _NavDest(Icons.people_outline_rounded, Icons.people_rounded, 'Alumni'),
-  _NavDest(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
-];
+// ─── Per-role navigation config ───────────────────────────────────────────────
+
+List<_NavDest> _destsFor(UserRole role) {
+  switch (role) {
+    case UserRole.staff:
+    case UserRole.hod:
+      return [
+        _NavDest(Icons.auto_stories_outlined, Icons.auto_stories, 'Materials'),
+        _NavDest(
+          Icons.calendar_month_outlined,
+          Icons.calendar_month,
+          'Timetable',
+        ),
+        _NavDest(Icons.psychology_outlined, Icons.psychology, 'AI Chat'),
+        _NavDest(Icons.people_outline_rounded, Icons.people_rounded, 'Alumni'),
+        _NavDest(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+      ];
+    case UserRole.alumni:
+      return [
+        _NavDest(Icons.people_outline_rounded, Icons.people_rounded, 'Alumni'),
+        _NavDest(Icons.psychology_outlined, Icons.psychology, 'AI Chat'),
+        _NavDest(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+      ];
+    default: // STUDENT + unknown
+      return [
+        _NavDest(Icons.auto_stories_outlined, Icons.auto_stories, 'Materials'),
+        _NavDest(
+          Icons.calendar_month_outlined,
+          Icons.calendar_month,
+          'Timetable',
+        ),
+        _NavDest(Icons.psychology_outlined, Icons.psychology, 'AI Chat'),
+        _NavDest(Icons.people_outline_rounded, Icons.people_rounded, 'Alumni'),
+        _NavDest(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+      ];
+  }
+}
+
+List<Widget> _screensFor(UserRole role, Map<String, dynamic> user) {
+  final isStaff = role == UserRole.staff || role == UserRole.hod;
+  final isAlumni = role == UserRole.alumni;
+  switch (role) {
+    case UserRole.alumni:
+      return [
+        AlumniListScreen(canEdit: isAlumni),
+        ChatScreen(),
+        ProfileScreen(),
+      ];
+    default: // student / staff / hod
+      return [
+        MaterialListScreen(canUpload: isStaff, user: user),
+        TimetableScreen(),
+        ChatScreen(),
+        AlumniListScreen(canEdit: isAlumni),
+        ProfileScreen(),
+      ];
+  }
+}
 
 // ─── Home Shell ───────────────────────────────────────────────────────────────
 
@@ -41,125 +112,172 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const MaterialListScreen(),
-    const TimetableScreen(),
-    const ChatScreen(),
-    const AlumniListScreen(),
-    const ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return context.isDesktop ? _buildDesktopShell() : _buildMobileShell();
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState is AuthAuthenticated
+        ? authState.user
+        : <String, dynamic>{};
+    final role = _parseRole(user['role'] as String?);
+    final dests = _destsFor(role);
+    final screens = _screensFor(role, user);
+
+    // Reset index if role changes (e.g. after re-login)
+    final safeIndex = _currentIndex.clamp(0, screens.length - 1);
+
+    return context.isDesktop
+        ? _buildDesktopShell(dests, screens, safeIndex, user, role)
+        : _buildMobileShell(dests, screens, safeIndex, user, role);
   }
 
-  // ── Desktop: NavigationRail + content side by side ─────────────────────────
+  // ── Role Banner ─────────────────────────────────────────────────────────────
 
-  Widget _buildDesktopShell() {
-    return Scaffold(
-      body: GradientBackground(
-        child: Row(
-          children: [
-            _buildNavigationRail(),
-            const VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: Color(0xFF263151),
+  Widget _roleBadge(UserRole role) {
+    final (label, color, icon) = switch (role) {
+      UserRole.staff => ('Faculty', AppColors.accent, Icons.badge_rounded),
+      UserRole.hod => (
+        'HOD',
+        AppColors.primary,
+        Icons.supervisor_account_rounded,
+      ),
+      UserRole.alumni => ('Alumni', AppColors.timeMorning, Icons.work_rounded),
+      _ => ('Student', AppColors.timeAfternoon, Icons.school_rounded),
+    };
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
             ),
-            Expanded(
-              child: IndexedStack(index: _currentIndex, children: _screens),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildNavigationRail() {
-    return NavigationRail(
-      backgroundColor: AppColors.darkSurface,
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (i) => setState(() => _currentIndex = i),
-      extended: context.screenWidth >= 1100,
-      minWidth: 72,
-      minExtendedWidth: 200,
-      leading: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
+  // ── Desktop: NavigationRail ─────────────────────────────────────────────────
+
+  Widget _buildDesktopShell(
+    List<_NavDest> dests,
+    List<Widget> screens,
+    int safeIndex,
+    Map<String, dynamic> user,
+    UserRole role,
+  ) {
+    return Scaffold(
+      body: GradientBackground(
+        child: Row(
           children: [
-            const BitBrainsLogo(size: 44),
-            if (context.screenWidth >= 1100) ...[
-              const SizedBox(height: 10),
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [AppColors.primary, AppColors.accentLight],
-                ).createShader(bounds),
-                child: const Text(
-                  'BitBrains',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+            NavigationRail(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              selectedIndex: safeIndex,
+              onDestinationSelected: (i) => setState(() => _currentIndex = i),
+              extended: context.screenWidth >= 1100,
+              minWidth: 72,
+              minExtendedWidth: 200,
+              leading: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  children: [
+                    BitBrainsLogo(size: 44),
+                    if (context.screenWidth >= 1100) ...[
+                      SizedBox(height: 8),
+                      ShaderMask(
+                        shaderCallback: (b) => LinearGradient(
+                          colors: [AppColors.primary, AppColors.accentLight],
+                        ).createShader(b),
+                        child: Text(
+                          'BitBrains',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      _roleBadge(role),
+                    ],
+                  ],
                 ),
               ),
-            ],
+              indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+              selectedIconTheme: IconThemeData(
+                color: AppColors.primary,
+                size: 22,
+              ),
+              unselectedIconTheme: IconThemeData(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                size: 22,
+              ),
+              selectedLabelTextStyle: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+              unselectedLabelTextStyle: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                fontSize: 13,
+              ),
+              destinations: dests
+                  .map(
+                    (d) => NavigationRailDestination(
+                      icon: Icon(d.icon),
+                      selectedIcon: Icon(d.activeIcon),
+                      label: Text(d.label),
+                    ),
+                  )
+                  .toList(),
+            ),
+            VerticalDivider(width: 1, thickness: 1, color: Color(0xFF263151)),
+            Expanded(
+              child: IndexedStack(index: safeIndex, children: screens),
+            ),
           ],
         ),
       ),
-      indicatorColor: AppColors.primary.withValues(alpha: 0.15),
-      selectedIconTheme: const IconThemeData(
-        color: AppColors.primary,
-        size: 22,
-      ),
-      unselectedIconTheme: const IconThemeData(
-        color: AppColors.textMuted,
-        size: 22,
-      ),
-      selectedLabelTextStyle: const TextStyle(
-        color: AppColors.primary,
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
-      ),
-      unselectedLabelTextStyle: const TextStyle(
-        color: AppColors.textMuted,
-        fontSize: 13,
-      ),
-      destinations: _destinations
-          .map(
-            (d) => NavigationRailDestination(
-              icon: Icon(d.icon),
-              selectedIcon: Icon(d.activeIcon),
-              label: Text(d.label),
-            ),
-          )
-          .toList(),
     );
   }
 
   // ── Mobile: BottomNavigationBar ────────────────────────────────────────────
 
-  Widget _buildMobileShell() {
+  Widget _buildMobileShell(
+    List<_NavDest> dests,
+    List<Widget> screens,
+    int safeIndex,
+    Map<String, dynamic> user,
+    UserRole role,
+  ) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: safeIndex, children: screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          border: const Border(
-            top: BorderSide(color: Color(0xFF263151), width: 1),
-          ),
+          border: Border(top: BorderSide(color: Color(0xFF263151), width: 1)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 20,
-              offset: const Offset(0, -4),
+              offset: Offset(0, -4),
             ),
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: safeIndex,
           onTap: (i) => setState(() => _currentIndex = i),
-          items: _destinations
+          items: dests
               .map(
                 (d) => BottomNavigationBarItem(
                   icon: Icon(d.icon),
@@ -177,7 +295,14 @@ class _HomeShellState extends State<HomeShell> {
 // ─── Materials Screen ─────────────────────────────────────────────────────────
 
 class MaterialListScreen extends StatefulWidget {
-  const MaterialListScreen({super.key});
+  final bool canUpload;
+  final Map<String, dynamic> user;
+
+  const MaterialListScreen({
+    super.key,
+    this.canUpload = false,
+    this.user = const {},
+  });
 
   @override
   State<MaterialListScreen> createState() => _MaterialListScreenState();
@@ -192,34 +317,85 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GradientBackground(
-      child: SafeArea(
-        child: Column(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: widget.canUpload ? _buildFab() : null,
+      body: GradientBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: BlocBuilder<MaterialBloc, StudyMaterialState>(
+                  builder: (context, state) {
+                    if (state is MaterialLoading) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      );
+                    } else if (state is MaterialError) {
+                      return _buildErrorState(state.message);
+                    } else if (state is MaterialLoaded) {
+                      if (state.materials.isEmpty) return _buildEmptyState();
+                      return _buildMaterialsList(context, state.materials);
+                    }
+                    return _buildEmptyState();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Premium gradient FAB for staff / HOD
+  Widget _buildFab() {
+    return FloatingActionButton.extended(
+      onPressed: _onUpload,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      extendedPadding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      label: Container(
+        height: 52,
+        padding: EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.accent],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.45),
+              blurRadius: 16,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(context),
-            Expanded(
-              child: BlocBuilder<MaterialBloc, StudyMaterialState>(
-                builder: (context, state) {
-                  if (state is MaterialLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                      ),
-                    );
-                  } else if (state is MaterialError) {
-                    return _buildErrorState(state.message);
-                  } else if (state is MaterialLoaded) {
-                    if (state.materials.isEmpty) return _buildEmptyState();
-                    return _buildMaterialsList(context, state.materials);
-                  }
-                  return _buildEmptyState();
-                },
+            Icon(Icons.upload_file_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Upload Material',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _onUpload() {
+    showUploadMaterialSheet(context);
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -237,7 +413,7 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
+                shaderCallback: (bounds) => LinearGradient(
                   colors: [AppColors.primary, AppColors.accentLight],
                 ).createShader(bounds),
                 child: Text(
@@ -250,9 +426,11 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
-                'AI & DS Department Materials',
+                widget.canUpload
+                    ? 'Manage & upload study materials'
+                    : 'AI & DS Department Materials',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -264,7 +442,7 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
                 () => context.push('/group-chat/general'),
                 tooltip: 'Group Chat',
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               _headerAction(
                 Icons.emoji_events_outlined,
                 () => context.push('/achievements'),
@@ -286,13 +464,15 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppColors.darkCard,
+            color: Theme.of(context).colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(12),
-            border: const Border.fromBorderSide(
-              BorderSide(color: Color(0xFF263151)),
-            ),
+            border: Border.fromBorderSide(BorderSide(color: Color(0xFF263151))),
           ),
-          child: Icon(icon, size: 20, color: AppColors.textSecondary),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
         ),
       ),
     );
@@ -344,31 +524,34 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.darkCard,
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF263151)),
+              border: Border.all(color: Color(0xFF263151)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_stories_outlined,
               size: 40,
-              color: AppColors.textMuted,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'No materials yet',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Upload the first study material',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -378,19 +561,21 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
   Widget _buildErrorState(String message) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               color: Colors.redAccent,
               size: 40,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               'Error: $message',
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -445,16 +630,16 @@ class _MaterialCard extends StatelessWidget {
     final iconColor = _colorForType(type);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
-        border: const Border.fromBorderSide(
+        border: Border.fromBorderSide(
           BorderSide(color: Color(0xFF263151), width: 1),
         ),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 48,
           height: 48,
@@ -466,20 +651,21 @@ class _MaterialCard extends StatelessWidget {
         ),
         title: Text(
           material['title'] ?? 'Untitled',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: EdgeInsets.only(top: 6),
           child: Wrap(
             spacing: 6,
             children: [
-              _chip(material['course_name'] ?? 'Unknown'),
-              _chip('Sem ${material['semester'] ?? '?'}'),
-              if (type != null) _chip(type.toUpperCase(), color: iconColor),
+              _chip(material['course_name'] ?? 'Unknown', context),
+              _chip('Sem ${material['semester'] ?? '?'}', context),
+              if (type != null)
+                _chip(type.toUpperCase(), context, color: iconColor),
             ],
           ),
         ),
@@ -490,7 +676,7 @@ class _MaterialCard extends StatelessWidget {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.download_rounded,
             color: AppColors.primary,
             size: 18,
@@ -500,11 +686,13 @@ class _MaterialCard extends StatelessWidget {
     );
   }
 
-  Widget _chip(String label, {Color? color}) {
+  Widget _chip(String label, BuildContext context, {Color? color}) {
+    final textColor =
+        color ?? Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.textMuted).withValues(alpha: 0.1),
+        color: textColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -512,7 +700,7 @@ class _MaterialCard extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: color ?? AppColors.textMuted,
+          color: textColor,
         ),
       ),
     );

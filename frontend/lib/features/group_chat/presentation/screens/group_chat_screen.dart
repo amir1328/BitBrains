@@ -6,6 +6,7 @@ import '../../logic/bloc/group_chat_state.dart';
 import '../../../auth/logic/bloc/auth_bloc.dart';
 import '../../../auth/logic/bloc/auth_state.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:intl/intl.dart';
 
 class GroupChatScreen extends StatefulWidget {
   final String roomId;
@@ -20,8 +21,29 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   final ScrollController _scrollController = ScrollController();
   int _currentUserId = 0;
 
+  // Formats the header (e.g. "Today", "Yesterday", "Feb 23, 2026")
+  String _getDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final targetDate = DateTime(date.year, date.month, date.day);
+
+    if (targetDate == today) {
+      return 'Today';
+    } else if (targetDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('MMM d, yyyy').format(date);
+    }
+  }
+
+  // Formats the inline time (e.g. "14:24" or "2:24 PM")
+  String _getTimeString(DateTime date) {
+    return DateFormat('h:mm a').format(date);
+  }
+
   // Palette for other users' names
-  static const List<Color> _senderColors = [
+  static final List<Color> _senderColors = [
     Color(0xFF6366F1),
     Color(0xFF8B5CF6),
     Color(0xFF22C55E),
@@ -57,7 +79,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
+        duration: Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
@@ -82,7 +104,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   },
                   builder: (context, state) {
                     if (state is GroupChatInitial) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primary,
                         ),
@@ -93,25 +115,84 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       }
                       return ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
                         itemCount: state.messages.length,
                         itemBuilder: (context, index) {
                           final msg = state.messages[index];
                           final isMe = msg['sender_id'] == _currentUserId;
-                          return _buildBubble(msg, isMe, context);
+
+                          // Parse current message date
+                          DateTime? currentMsgDate;
+                          if (msg['timestamp'] != null) {
+                            currentMsgDate = DateTime.tryParse(
+                              msg['timestamp'],
+                            )?.toLocal();
+                          }
+
+                          // Parse previous message date to check if we need a new date header
+                          DateTime? prevMsgDate;
+                          bool showDateHeader = false;
+                          if (index == 0) {
+                            showDateHeader =
+                                true; // Always show header for first msg
+                          } else {
+                            final prevMsg = state.messages[index - 1];
+                            if (prevMsg['timestamp'] != null) {
+                              prevMsgDate = DateTime.tryParse(
+                                prevMsg['timestamp'],
+                              )?.toLocal();
+                              if (currentMsgDate != null &&
+                                  prevMsgDate != null) {
+                                if (currentMsgDate.year != prevMsgDate.year ||
+                                    currentMsgDate.month != prevMsgDate.month ||
+                                    currentMsgDate.day != prevMsgDate.day) {
+                                  showDateHeader = true;
+                                }
+                              }
+                            }
+                          }
+
+                          // Check if previous message was from the same sender to group them
+                          bool isConsecutive = false;
+                          if (index > 0 && !showDateHeader) {
+                            final prevMsg = state.messages[index - 1];
+                            if (prevMsg['sender_id'] == msg['sender_id']) {
+                              isConsecutive = true;
+                            }
+                          }
+
+                          return Column(
+                            crossAxisAlignment:
+                                StretchMode.zoomBackground.index == 0
+                                ? CrossAxisAlignment.center
+                                : CrossAxisAlignment.stretch,
+                            children: [
+                              if (showDateHeader && currentMsgDate != null)
+                                _buildDateHeader(currentMsgDate),
+                              _buildBubble(
+                                msg,
+                                isMe,
+                                isConsecutive,
+                                currentMsgDate,
+                                context,
+                              ),
+                            ],
+                          );
                         },
                       );
                     } else if (state is GroupChatError) {
                       return Center(
                         child: Text(
                           'Error: ${state.message}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
                           ),
                         ),
                       );
                     }
-                    return const SizedBox.shrink();
+                    return SizedBox.shrink();
                   },
                 ),
               ),
@@ -123,10 +204,34 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
   }
 
+  Widget _buildDateHeader(DateTime date) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color(0xFF263151), width: 1),
+          ),
+          child: Text(
+            _getDateHeader(date),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 24, 12),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(16, 16, 24, 12),
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFF263151), width: 1)),
       ),
       child: Row(
@@ -134,53 +239,52 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.darkCard,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(11),
-                border: const Border.fromBorderSide(
+                border: Border.fromBorderSide(
                   BorderSide(color: Color(0xFF263151)),
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 16,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppColors.accent, AppColors.primary],
               ),
               borderRadius: BorderRadius.circular(13),
             ),
-            child: const Icon(
-              Icons.groups_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(Icons.groups_rounded, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.roomId == 'general' ? 'General' : widget.roomId,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                const Text(
+                Text(
                   'Department Group Chat',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
                 ),
               ],
             ),
@@ -196,31 +300,34 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.darkCard,
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF263151)),
+              border: Border.all(color: Color(0xFF263151)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.forum_outlined,
               size: 36,
-              color: AppColors.textMuted,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'No messages yet',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Be the first to say something!',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -230,6 +337,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Widget _buildBubble(
     Map<String, dynamic> message,
     bool isMe,
+    bool isConsecutive,
+    DateTime? msgDate,
     BuildContext context,
   ) {
     final senderColor = isMe
@@ -239,62 +348,93 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
+        margin: EdgeInsets.only(top: isConsecutive ? 2 : 12, bottom: 2),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.74,
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
+          minWidth: 80, // Minimum width to fit timestamp beautifully
         ),
         child: Column(
           crossAxisAlignment: isMe
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
-            if (!isMe)
+            if (!isMe && !isConsecutive)
               Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 3),
+                padding: EdgeInsets.only(left: 4, bottom: 4),
                 child: Text(
                   message['sender_name'] ?? 'Unknown',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: senderColor,
                   ),
                 ),
               ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: EdgeInsets.fromLTRB(14, 10, 14, 8),
               decoration: BoxDecoration(
                 gradient: isMe
-                    ? const LinearGradient(
+                    ? LinearGradient(
                         colors: [AppColors.primary, AppColors.accent],
                       )
                     : null,
-                color: isMe ? null : AppColors.darkCard,
+                color: isMe
+                    ? null
+                    : Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  // Sharper corner on the bottom side facing the avatar if it's the last in a group
+                  // For simplicity in this upgrade, we just square off the "tail" side if not consecutive
+                  bottomLeft: Radius.circular(
+                    isMe ? 16 : (isConsecutive ? 16 : 4),
+                  ),
+                  bottomRight: Radius.circular(
+                    isMe ? (isConsecutive ? 16 : 4) : 16,
+                  ),
                 ),
                 border: isMe
                     ? null
-                    : Border.all(color: const Color(0xFF263151), width: 1),
+                    : Border.all(color: Color(0xFF263151), width: 1),
                 boxShadow: isMe
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
                         ),
                       ]
                     : [],
               ),
-              child: Text(
-                message['content'] ?? '',
-                style: TextStyle(
-                  color: isMe ? Colors.white : AppColors.textPrimary,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.end,
+                children: [
+                  Text(
+                    message['content'] ?? '',
+                    style: TextStyle(
+                      color: isMe
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontSize: 14.5,
+                      height: 1.35,
+                    ),
+                  ),
+                  SizedBox(width: 8), // Spacing between text and timestamp
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 1.0, top: 4.0),
+                    child: Text(
+                      msgDate != null ? _getTimeString(msgDate) : '',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: isMe
+                            ? Colors.white.withOpacity(0.7)
+                            : Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -305,8 +445,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   Widget _buildInputBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Color(0xFF263151), width: 1)),
       ),
       child: Row(
@@ -314,45 +454,42 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
               decoration: InputDecoration(
                 hintText: 'Message the group...',
                 filled: true,
-                fillColor: AppColors.darkCard,
-                contentPadding: const EdgeInsets.symmetric(
+                fillColor: Theme.of(context).colorScheme.primaryContainer,
+                contentPadding: EdgeInsets.symmetric(
                   horizontal: 18,
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFF263151)),
+                  borderSide: BorderSide(color: Color(0xFF263151)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFF263151)),
+                  borderSide: BorderSide(color: Color(0xFF263151)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 1.5,
-                  ),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           GestureDetector(
             onTap: _sendMessage,
             child: Container(
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [AppColors.primary, AppColors.accent],
                 ),
                 borderRadius: BorderRadius.circular(14),
@@ -360,15 +497,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.4),
                     blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 19,
-              ),
+              child: Icon(Icons.send_rounded, color: Colors.white, size: 19),
             ),
           ),
         ],

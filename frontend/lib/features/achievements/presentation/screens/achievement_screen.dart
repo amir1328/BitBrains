@@ -27,8 +27,8 @@ class _AchievementScreenState extends State<AchievementScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.darkSurface,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => Padding(
@@ -45,60 +45,60 @@ class _AchievementScreenState extends State<AchievementScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: [AppColors.gold, AppColors.goldLight],
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.emoji_events_rounded,
                     color: Colors.white,
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 14),
-                const Text(
+                SizedBox(width: 14),
+                Text(
                   'Add Achievement',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             TextField(
               controller: titleController,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Achievement Title',
                 prefixIcon: Icon(Icons.title_rounded),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             TextField(
               controller: descriptionController,
               maxLines: 3,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Description',
                 prefixIcon: Icon(Icons.notes_rounded),
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             TextField(
               controller: categoryController,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
                 labelText: 'Category',
                 prefixIcon: Icon(Icons.category_outlined),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             GradientButton(
               label: 'Add Achievement',
               icon: Icons.add_rounded,
@@ -128,7 +128,7 @@ class _AchievementScreenState extends State<AchievementScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                padding: EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -136,10 +136,10 @@ class _AchievementScreenState extends State<AchievementScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
+                          shaderCallback: (bounds) => LinearGradient(
                             colors: [AppColors.gold, AppColors.goldLight],
                           ).createShader(bounds),
-                          child: const Text(
+                          child: Text(
                             'Achievements',
                             style: TextStyle(
                               fontSize: 28,
@@ -149,12 +149,12 @@ class _AchievementScreenState extends State<AchievementScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
+                        SizedBox(height: 2),
+                        Text(
                           'Celebrating student milestones',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                       ],
@@ -162,18 +162,18 @@ class _AchievementScreenState extends State<AchievementScreen> {
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.darkCard,
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
-                          border: const Border.fromBorderSide(
+                          border: Border.fromBorderSide(
                             BorderSide(color: Color(0xFF263151)),
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           size: 16,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -185,15 +185,13 @@ class _AchievementScreenState extends State<AchievementScreen> {
                   listener: (context, state) {
                     if (state is AchievementCreatedSuccess) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('🏆 Achievement unlocked!'),
-                        ),
+                        SnackBar(content: Text('🏆 Achievement unlocked!')),
                       );
                     }
                   },
                   builder: (context, state) {
                     if (state is AchievementLoading) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(color: AppColors.gold),
                       );
                     } else if (state is AchievementLoaded) {
@@ -201,7 +199,7 @@ class _AchievementScreenState extends State<AchievementScreen> {
                         return _buildEmptyState();
                       }
                       return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
                         itemCount: state.achievements.length,
                         itemBuilder: (context, index) => _AchievementCard(
                           achievement: state.achievements[index],
@@ -211,13 +209,15 @@ class _AchievementScreenState extends State<AchievementScreen> {
                       return Center(
                         child: Text(
                           'Error: ${state.message}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
                           ),
                         ),
                       );
                     }
-                    return const SizedBox.shrink();
+                    return SizedBox.shrink();
                   },
                 ),
               ),
@@ -227,7 +227,7 @@ class _AchievementScreenState extends State<AchievementScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
     );
   }
@@ -238,31 +238,34 @@ class _AchievementScreenState extends State<AchievementScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.gold.withOpacity(0.1),
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.gold.withOpacity(0.25)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.emoji_events_outlined,
               size: 40,
               color: AppColors.gold,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'No achievements yet',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Tap + to add your first milestone',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -277,11 +280,11 @@ class _AchievementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(18),
-        border: const Border.fromBorderSide(
+        border: Border.fromBorderSide(
           BorderSide(color: Color(0xFF263151), width: 1),
         ),
       ),
@@ -291,13 +294,13 @@ class _AchievementCard extends StatelessWidget {
           // Gold banner top
           Container(
             height: 6,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: AppColors.goldGradient,
               borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -308,70 +311,76 @@ class _AchievementCard extends StatelessWidget {
                     color: AppColors.gold.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.emoji_events_rounded,
                     color: AppColors.gold,
                     size: 26,
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         achievement['title'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       if (achievement['description'] != null &&
                           achievement['description'].isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           achievement['description'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
                             height: 1.4,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Row(
                         children: [
                           _chip(
                             achievement['category'] ?? 'General',
                             AppColors.primary,
                           ),
-                          const Spacer(),
-                          const Icon(
+                          Spacer(),
+                          Icon(
                             Icons.person_outline_rounded,
                             size: 13,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             achievement['user_name'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Icon(
+                          SizedBox(width: 12),
+                          Icon(
                             Icons.calendar_today_outlined,
                             size: 13,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             achievement['date'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textMuted,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
                             ),
                           ),
                         ],
@@ -389,7 +398,7 @@ class _AchievementCard extends StatelessWidget {
 
   Widget _chip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),

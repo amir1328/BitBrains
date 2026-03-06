@@ -28,7 +28,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     super.initState();
     _tabController = TabController(length: _days.length, vsync: this);
     context.read<TimetableBloc>().add(
-      const LoadTimetable(semester: 5, courseName: 'AI&DS'),
+      LoadTimetable(semester: 5, courseName: 'AI&DS'),
     );
   }
 
@@ -55,7 +55,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             children: [
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                padding: EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -63,10 +63,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
+                          shaderCallback: (bounds) => LinearGradient(
                             colors: [AppColors.primary, AppColors.accentLight],
                           ).createShader(bounds),
-                          child: const Text(
+                          child: Text(
                             'Timetable',
                             style: TextStyle(
                               fontSize: 28,
@@ -76,41 +76,43 @@ class _TimetableScreenState extends State<TimetableScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
+                        SizedBox(height: 2),
+                        Text(
                           'Sem 5 — AI & DS',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
                           ),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.darkCard,
+                        color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),
-                        border: const Border.fromBorderSide(
+                        border: Border.fromBorderSide(
                           BorderSide(color: Color(0xFF263151)),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.today_rounded,
                             size: 14,
                             color: AppColors.primary,
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Text(
                             _days[_tabController.index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.color,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -122,26 +124,39 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
 
               // Tab bar
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TabBar(
                 controller: _tabController,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 indicator: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     colors: [AppColors.primary, AppColors.accent],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                indicatorPadding: const EdgeInsets.symmetric(vertical: 4),
+                indicatorPadding: EdgeInsets.symmetric(vertical: 4),
                 dividerColor: Colors.transparent,
+                // ✅ Fix: active tab text white (visible on gradient), inactive muted
+                labelColor: Colors.white,
+                unselectedLabelColor: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.color,
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
                 tabs: _days
                     .map(
                       (d) => Tab(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Text(d.substring(0, 3).toUpperCase()),
                         ),
                       ),
@@ -161,7 +176,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   },
                   builder: (context, state) {
                     if (state is TimetableLoading) {
-                      return const Center(
+                      return Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primary,
                         ),
@@ -181,7 +196,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                             return _buildEmptyDay();
                           }
                           return ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                            padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
                             itemCount: dayEntries.length,
                             itemBuilder: (context, i) => _ClassCard(
                               entry: dayEntries[i],
@@ -191,10 +206,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                         }).toList(),
                       );
                     }
-                    return const Center(
+                    return Center(
                       child: Text(
                         'Loading timetable...',
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
                       ),
                     );
                   },
@@ -213,31 +230,34 @@ class _TimetableScreenState extends State<TimetableScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.darkCard,
+              color: Theme.of(context).colorScheme.primaryContainer,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF263151)),
+              border: Border.all(color: Color(0xFF263151)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.coffee_rounded,
               size: 32,
-              color: AppColors.textMuted,
+              color: Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
-          const SizedBox(height: 14),
-          const Text(
+          SizedBox(height: 14),
+          Text(
             'No classes today',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
               fontWeight: FontWeight.w600,
               fontSize: 15,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
+          SizedBox(height: 4),
+          Text(
             'Enjoy your free time!',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodySmall?.color,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -253,11 +273,11 @@ class _ClassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.darkCard,
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
-        border: const Border.fromBorderSide(
+        border: Border.fromBorderSide(
           BorderSide(color: Color(0xFF263151), width: 1),
         ),
       ),
@@ -269,7 +289,7 @@ class _ClassCard extends StatelessWidget {
               width: 4,
               decoration: BoxDecoration(
                 color: accentColor,
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   bottomLeft: Radius.circular(16),
                 ),
@@ -277,7 +297,7 @@ class _ClassCard extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 child: Row(
                   children: [
                     // Time block
@@ -286,7 +306,7 @@ class _ClassCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 6,
                           ),
@@ -304,18 +324,22 @@ class _ClassCard extends StatelessWidget {
                                   color: accentColor,
                                 ),
                               ),
-                              const Text(
+                              Text(
                                 '|',
                                 style: TextStyle(
-                                  color: AppColors.textMuted,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.color,
                                   fontSize: 10,
                                 ),
                               ),
                               Text(
                                 entry.endTime,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textMuted,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.color,
                                 ),
                               ),
                             ],
@@ -323,7 +347,7 @@ class _ClassCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     // Subject info
                     Expanded(
                       child: Column(
@@ -332,47 +356,55 @@ class _ClassCard extends StatelessWidget {
                         children: [
                           Text(
                             entry.subject,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          SizedBox(height: 5),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.person_outline_rounded,
                                 size: 13,
-                                color: AppColors.textMuted,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   entry.teacherName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.room_outlined,
                                 size: 13,
-                                color: AppColors.textMuted,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Text(
                                 'Room ${entry.roomNo}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textMuted,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.color,
                                 ),
                               ),
                             ],

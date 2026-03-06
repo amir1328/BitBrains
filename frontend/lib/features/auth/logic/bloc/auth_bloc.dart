@@ -21,16 +21,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     final isLoggedIn = await authRepository.isLoggedIn();
-    if (isLoggedIn) {
-      try {
-        final user = await profileRepository.getProfile();
-        emit(AuthAuthenticated(user));
-      } catch (e) {
-        // Token might be invalid
+    if (!isLoggedIn) {
+      emit(AuthUnauthenticated());
+      return;
+    }
+
+    // ── Cache-first: emit instantly from cache, no network wait ──────────────
+    final cachedUser = await authRepository.getCachedUser();
+    if (cachedUser != null) {
+      emit(AuthAuthenticated(cachedUser)); // ← instant, no delay
+    }
+
+    // ── Background refresh from network (silently updates state) ─────────────
+    try {
+      final freshUser = await profileRepository.getProfile();
+      await authRepository.saveUserCache(freshUser); // keep cache fresh
+      emit(AuthAuthenticated(freshUser));
+    } catch (e) {
+      // Network failed, but we already emitted from cache — user is still in
+      if (cachedUser == null) {
+        // No cache and network failed → force logout
+        await authRepository.logout();
         emit(AuthUnauthenticated());
       }
-    } else {
-      emit(AuthUnauthenticated());
+      // If cache existed, leave the authenticated state as-is
     }
   }
 
@@ -42,6 +56,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await authRepository.login(event.email, event.password);
       final user = await profileRepository.getProfile();
+      await authRepository.saveUserCache(user); // cache for next launch
       emit(AuthAuthenticated(user));
     } catch (e) {
       emit(AuthFailure(error: e.toString()));
@@ -63,15 +78,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         "year": event.year,
         "roll_number": event.rollNumber,
       };
-      // Filter out nulls
       data.removeWhere((key, value) => value == null);
-
       await authRepository.register(data);
-      // Automatically login or ask user to login? Let's ask to login for now, or just auto-login.
-      // For simplicity, let's just emit Unauthenticated with a success message?
-      // Or auto login. Let's try auto login logic here or just tell UI to navigate.
-      // Let's emit Unauthenticated so they can login.
-      // Ideally we would return a "RegistrationSuccess" state, but for now:
       emit(AuthUnauthenticated());
     } catch (e) {
       emit(AuthFailure(error: e.toString()));
@@ -82,7 +90,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    await authRepository.logout();
+    await authRepository.logout(); // also clears user cache
     emit(AuthUnauthenticated());
   }
 }

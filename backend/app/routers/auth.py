@@ -5,8 +5,8 @@ from datetime import timedelta
 from jose import JWTError, jwt
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, RefreshRequest
-from app.utils import get_password_hash, verify_password
+from app.schemas.user import UserCreate, UserResponse, Token, RefreshRequest, ChangePasswordRequest
+from app.utils import get_password_hash, verify_password, get_current_active_user
 from app.core import security
 
 router = APIRouter(
@@ -16,26 +16,45 @@ router = APIRouter(
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
+def register(
+    user: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    # Security: Only HOD can register new users
+    if current_user.role.value != "hod":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Only the Head of Department (HOD) can register new users."
+        )
+
+    # Clean Validation
+    if not user.email or "@" not in user.email:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    if not user.full_name or len(user.full_name.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Full name is required and must be at least 2 characters")
+    if len(user.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+    
+    # Check if email is already registered
+    db_user = db.query(User).filter(User.email == user.email.lower().strip()).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email is already registered")
 
     hashed_password = get_password_hash(user.password)
     new_user = User(
-        email=user.email,
-        full_name=user.full_name,
+        email=user.email.lower().strip(),
+        full_name=user.full_name.strip(),
         hashed_password=hashed_password,
         role=user.role,
         department=user.department,
         year=user.year,
-        roll_number=user.roll_number
+        roll_number=user.roll_number.strip() if user.roll_number else None
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
-
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -99,3 +118,19 @@ def refresh_access_token(request: RefreshRequest, db: Session = Depends(get_db))
         "refresh_token": new_refresh_token,
         "token_type": "bearer",
     }
+
+@router.post("/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password"
+        )
+    
+    current_user.hashed_password = get_password_hash(request.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}
