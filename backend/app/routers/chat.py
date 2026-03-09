@@ -5,7 +5,7 @@ from app.services.rag_service import RagService
 from app.models.user import User
 from app.utils import get_current_user
 from pydantic import BaseModel
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import os
@@ -30,6 +30,7 @@ class ChatResponse(BaseModel):
 
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
 @router.post("/ask", response_model=ChatResponse)
@@ -69,18 +70,19 @@ async def ask_question(
         context_text = "\n\n".join([doc.content for doc in docs])
         
         # 2. Check API Key Configuration
-        if not GEMINI_API_KEY:
-            logger.error("GEMINI_API_KEY not configured")
+        if not OPENROUTER_API_KEY:
+            logger.error("OPENROUTER_API_KEY not configured")
             return ChatResponse(
-                answer="AI Service is not configured (API Key missing).",
+                answer="AI Service is not configured (OpenRouter API Key missing).",
                 sources=[]
             )
 
-        # 3. Generate Answer via LLM using Modern Runnable API
+        # 3. Generate Answer via LLM using OpenRouter via LangChain
         try:
-            llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
-                google_api_key=GEMINI_API_KEY
+            llm = ChatOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=OPENROUTER_API_KEY,
+                model="nvidia/llama-nemotron-embed-vl-1b-v2:free"
             )
             
             # Define prompt template
