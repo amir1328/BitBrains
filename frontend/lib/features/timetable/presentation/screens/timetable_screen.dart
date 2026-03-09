@@ -4,6 +4,9 @@ import '../../logic/bloc/timetable_bloc.dart';
 import '../../logic/bloc/timetable_event.dart';
 import '../../logic/bloc/timetable_state.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../features/auth/logic/bloc/auth_bloc.dart';
+import '../../../../features/auth/logic/bloc/auth_state.dart';
+import '../widgets/timetable_entry_form.dart';
 
 class TimetableScreen extends StatefulWidget {
   const TimetableScreen({super.key});
@@ -23,12 +26,90 @@ class _TimetableScreenState extends State<TimetableScreen>
     'Friday',
   ];
 
+  int _semester = 5;
+  String _courseName = 'AI&DS';
+  bool _isStaffOrHod = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _days.length, vsync: this);
-    context.read<TimetableBloc>().add(
-      LoadTimetable(semester: 5, courseName: 'AI&DS'),
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        final user = authState.user;
+        final role = user['role'] as String? ?? 'student';
+        final year = user['year'] as int? ?? 3;
+
+        setState(() {
+          _isStaffOrHod = role == 'staff' || role == 'hod';
+          _semester = year * 2 - 1;
+          _courseName = user['department'] as String? ?? 'AI&DS';
+        });
+      }
+
+      context.read<TimetableBloc>().add(
+        LoadTimetable(semester: _semester, courseName: _courseName),
+      );
+    });
+  }
+
+  void _showEntryForm([dynamic entry]) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TimetableEntryForm(
+        entry: entry,
+        semester: _semester,
+        courseName: _courseName,
+        dayOfWeek: _days[_tabController.index],
+      ),
+    );
+
+    if (result != null && mounted) {
+      if (entry == null) {
+        context.read<TimetableBloc>().add(AddTimetableEntry(result));
+      } else {
+        context.read<TimetableBloc>().add(
+          UpdateTimetableEntry(
+            id: entry.id,
+            entry: result,
+            semester: _semester,
+            courseName: _courseName,
+          ),
+        );
+      }
+    }
+  }
+
+  void _confirmDelete(dynamic entry) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Class'),
+        content: const Text('Are you sure you want to delete this class?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<TimetableBloc>().add(
+                DeleteTimetableEntry(
+                  id: entry.id,
+                  semester: _semester,
+                  courseName: _courseName,
+                ),
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -49,6 +130,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: _isStaffOrHod
+          ? FloatingActionButton(
+              onPressed: () => _showEntryForm(),
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: GradientBackground(
         child: SafeArea(
           child: Column(
@@ -78,7 +166,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Sem 5 — AI & DS',
+                          'Sem $_semester — $_courseName',
                           style: TextStyle(
                             fontSize: 13,
                             color: Theme.of(context).textTheme.bodySmall?.color,
@@ -201,6 +289,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                             itemBuilder: (context, i) => _ClassCard(
                               entry: dayEntries[i],
                               accentColor: _timeColor(dayEntries[i].startTime),
+                              isStaffOrHod: _isStaffOrHod,
+                              onEdit: () => _showEntryForm(dayEntries[i]),
+                              onDelete: () => _confirmDelete(dayEntries[i]),
                             ),
                           );
                         }).toList(),
@@ -268,7 +359,17 @@ class _TimetableScreenState extends State<TimetableScreen>
 class _ClassCard extends StatelessWidget {
   final dynamic entry;
   final Color accentColor;
-  const _ClassCard({required this.entry, required this.accentColor});
+  final bool isStaffOrHod;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ClassCard({
+    required this.entry,
+    required this.accentColor,
+    required this.isStaffOrHod,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -412,6 +513,33 @@ class _ClassCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (isStaffOrHod) ...[
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            onPressed: onEdit,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                          const SizedBox(height: 12),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 20,
+                            ),
+                            onPressed: onDelete,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            color: Colors.redAccent,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

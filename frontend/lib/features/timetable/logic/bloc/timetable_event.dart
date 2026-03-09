@@ -40,3 +40,20 @@ class DeleteTimetableEntry extends TimetableEvent {
   @override
   List<Object> get props => [id, semester, courseName];
 }
+
+class UpdateTimetableEntry extends TimetableEvent {
+  final int id;
+  final Map<String, dynamic> entry;
+  final int semester;
+  final String courseName;
+
+  const UpdateTimetableEntry({
+    required this.id,
+    required this.entry,
+    required this.semester,
+    required this.courseName,
+  });
+
+  @override
+  List<Object> get props => [id, entry, semester, courseName];
+}

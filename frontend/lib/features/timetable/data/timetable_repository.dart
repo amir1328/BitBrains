@@ -20,4 +20,8 @@ class TimetableRepository {
   Future<void> deleteEntry(int id) async {
     await remoteDataSource.deleteTimetableEntry(id);
   }
+
+  Future<void> updateEntry(int id, Map<String, dynamic> entry) async {
+    await remoteDataSource.updateTimetableEntry(id, entry);
+  }
 }

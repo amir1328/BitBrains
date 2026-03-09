@@ -63,3 +63,26 @@ def delete_timetable_entry(
          
      db.delete(db_entry)
      db.commit()
+
+@router.put("/{entry_id}", response_model=schemas.TimetableEntry)
+def update_timetable_entry(
+    entry_id: int,
+    entry_update: schemas.TimetableEntryUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: models.user.User = Depends(utils.get_current_active_user)
+):
+    if current_user.role not in [user_models.UserRole.STAFF, user_models.UserRole.HOD]:
+       raise HTTPException(status_code=403, detail="Not authorized to manage timetable")
+       
+    db_entry = db.query(models.timetable.TimetableEntry).filter(models.timetable.TimetableEntry.id == entry_id).first()
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+        
+    update_data = entry_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_entry, key, value)
+        
+    db.add(db_entry)
+    db.commit()
+    db.refresh(db_entry)
+    return db_entry

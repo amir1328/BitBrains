@@ -37,6 +37,30 @@ class TimetableEntry extends Equatable {
     );
   }
 
+  TimetableEntry copyWith({
+    int? id,
+    String? courseName,
+    int? semester,
+    String? dayOfWeek,
+    String? subject,
+    String? teacherName,
+    String? roomNo,
+    String? startTime,
+    String? endTime,
+  }) {
+    return TimetableEntry(
+      id: id ?? this.id,
+      courseName: courseName ?? this.courseName,
+      semester: semester ?? this.semester,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      subject: subject ?? this.subject,
+      teacherName: teacherName ?? this.teacherName,
+      roomNo: roomNo ?? this.roomNo,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,

@@ -10,6 +10,7 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
     on<LoadTimetable>(_onLoadTimetable);
     on<AddTimetableEntry>(_onAddTimetableEntry);
     on<DeleteTimetableEntry>(_onDeleteTimetableEntry);
+    on<UpdateTimetableEntry>(_onUpdateTimetableEntry);
   }
 
   Future<void> _onLoadTimetable(
@@ -36,8 +37,13 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
     try {
       await repository.createEntry(event.entry);
       emit(const TimetableOperationSuccess("Entry added successfully"));
-      // We don't reload here automatically because we might want to stay on the same screen context
-      // The UI should trigger a reload if needed, or we could do it here if we had the context
+      // Refresh timeline automatically
+      add(
+        LoadTimetable(
+          semester: event.entry['semester'],
+          courseName: event.entry['course_name'],
+        ),
+      );
     } catch (e) {
       emit(TimetableError(e.toString()));
     }
@@ -52,6 +58,22 @@ class TimetableBloc extends Bloc<TimetableEvent, TimetableState> {
       add(
         LoadTimetable(semester: event.semester, courseName: event.courseName),
       );
+    } catch (e) {
+      emit(TimetableError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateTimetableEntry(
+    UpdateTimetableEntry event,
+    Emitter<TimetableState> emit,
+  ) async {
+    emit(TimetableLoading());
+    try {
+      await repository.updateEntry(event.id, event.entry);
+      add(
+        LoadTimetable(semester: event.semester, courseName: event.courseName),
+      );
+      emit(const TimetableOperationSuccess("Entry updated successfully"));
     } catch (e) {
       emit(TimetableError(e.toString()));
     }

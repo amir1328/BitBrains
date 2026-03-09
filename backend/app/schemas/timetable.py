@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import time
 from enum import Enum
+from typing import Optional
 
 class DayOfWeek(str, Enum):
     MONDAY = "Monday"
@@ -23,6 +24,16 @@ class TimetableEntryBase(BaseModel):
 
 class TimetableEntryCreate(TimetableEntryBase):
     pass
+
+class TimetableEntryUpdate(BaseModel):
+    course_name: Optional[str] = None
+    semester: Optional[int] = None
+    day_of_week: Optional[DayOfWeek] = None
+    subject: Optional[str] = None
+    teacher_name: Optional[str] = None
+    room_no: Optional[str] = None
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
 
 class TimetableEntry(TimetableEntryBase):
     id: int

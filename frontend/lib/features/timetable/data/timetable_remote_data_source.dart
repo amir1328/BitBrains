@@ -40,4 +40,12 @@ class TimetableRemoteDataSource {
       throw Exception(e.response?.data['detail'] ?? 'Failed to delete entry');
     }
   }
+
+  Future<void> updateTimetableEntry(int id, Map<String, dynamic> entry) async {
+    try {
+      await apiClient.dio.put('/timetable/$id', data: entry);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? 'Failed to update entry');
+    }
+  }
 }
