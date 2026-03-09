@@ -8,6 +8,7 @@ class MaterialBloc extends Bloc<MaterialEvent, StudyMaterialState> {
 
   MaterialBloc({required this.repository}) : super(MaterialInitial()) {
     on<MaterialsLearned>(_onMaterialsLearned);
+    on<DeleteMaterial>(_onDeleteMaterial);
   }
 
   /// Exposed so the upload sheet can call uploadMaterial directly.
@@ -26,6 +27,28 @@ class MaterialBloc extends Bloc<MaterialEvent, StudyMaterialState> {
       emit(MaterialLoaded(materials));
     } catch (e) {
       emit(MaterialError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteMaterial(
+    DeleteMaterial event,
+    Emitter<StudyMaterialState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is MaterialLoaded) {
+      try {
+        await repository.deleteMaterial(event.materialId);
+        // Remove from the local list instead of a full reload
+        final updatedMaterials = currentState.materials
+            .where((m) => m['id'] != event.materialId)
+            .toList();
+
+        emit(MaterialLoaded(updatedMaterials));
+      } catch (e) {
+        // Here we could emit an error state or a specific delete error state.
+        // For simplicity, we fallback to the error state.
+        emit(MaterialError(e.toString()));
+      }
     }
   }
 }

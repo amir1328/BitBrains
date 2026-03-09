@@ -45,4 +45,12 @@ class MaterialRemoteDataSource {
     );
     return response.data as Map<String, dynamic>;
   }
+
+  Future<void> deleteMaterial(int id) async {
+    try {
+      await apiClient.dio.delete('/materials/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

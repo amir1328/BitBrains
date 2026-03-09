@@ -59,15 +59,11 @@ async def ask_question(
             logger.error(f"RAG query error: {str(e)}")
             raise HTTPException(status_code=500, detail=f"RAG Error: {str(e)}")
 
-        # Handle no relevant documents
-        if not docs:
-            return ChatResponse(
-                answer="I couldn't find any relevant study materials to answer your question.",
-                sources=[]
-            )
-
-        # Combine document content as context
-        context_text = "\n\n".join([doc.content for doc in docs])
+        # If no relevant documents, we can still pass an empty context
+        # so the model acts as a general chatbot.
+        context_text = ""
+        if docs:
+            context_text = "\n\n".join([doc.content for doc in docs])
         
         # 2. Check API Key Configuration
         if not OPENROUTER_API_KEY:
@@ -86,9 +82,11 @@ async def ask_question(
             )
             
             # Define prompt template
-            prompt_template = """You are a helpful AI study assistant called BitBrains. 
-Answer the question based ONLY on the following context provided from study materials.
-If the answer is not in the context, say "I cannot answer this based on the available materials."
+            prompt_template = """You are a helpful and intelligent AI study assistant called BitBrains. 
+Your primary goal is to assist students with their questions. 
+
+If relevant study materials are provided below in the "Context" section, prioritize using them to formulate a highly accurate answer. 
+If the "Context" is empty or does not contain the answer, act as a general, highly knowledgeable AI assistant and answer their question directly to the best of your ability. Do NOT say "I cannot answer this based on the available materials".
 
 Context:
 {context}

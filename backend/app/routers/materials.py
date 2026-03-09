@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
 import shutil
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 from app.database import get_db
 from app.models.user import User
 from app.models.material import Material
+from app.models.embedding import DocumentEmbedding
 from app.schemas.material import MaterialResponse
 from app.core import security
 from app.utils import get_password_hash # Not needed here but for reference
@@ -116,3 +118,59 @@ def get_materials(
     if semester:
         query = query.filter(Material.semester == semester)
     return query.all()
+
+@router.get("/{material_id}/download")
+async def download_material(
+    material_id: int,
+    db: Session = Depends(get_db)
+):
+    """Download a material file by its ID."""
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    
+    file_path = material.file_url
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+        
+    return FileResponse(
+        path=file_path, 
+        filename=os.path.basename(file_path),
+        media_type="application/octet-stream"
+    )
+
+@router.delete("/{material_id}")
+async def delete_material(
+    material_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a material, its file, and its associated embeddings."""
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+        
+    # ONLY HOD/Staff can delete materials. Students cannot, even if they uploaded them.
+    if current_user.role not in ["staff", "hod"]:
+        raise HTTPException(status_code=403, detail="Only Staff or HOD can delete study materials")
+        
+    # 1. Delete the actual file from storage
+    file_path = material.file_url
+    try:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Error removing file {file_path}: {e}")
+        
+    # 2. Delete the associated vector embeddings
+    try:
+        db.query(DocumentEmbedding).filter(DocumentEmbedding.material_id == material_id).delete()
+    except Exception as e:
+        print(f"Error deleting embeddings: {e}")
+        
+    # 3. Delete the material database record
+    db.delete(material)
+    db.commit()
+    
+    return {"message": "Material safely deleted"}
+

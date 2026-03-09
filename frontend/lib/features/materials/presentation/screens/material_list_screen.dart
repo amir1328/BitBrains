@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../features/auth/logic/bloc/auth_bloc.dart';
 import '../../../../features/auth/logic/bloc/auth_state.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'upload_material_sheet.dart';
 
 // Feature screens hosted in the bottom nav / rail
@@ -499,7 +500,7 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
         padding: padding,
         itemCount: materials.length,
         itemBuilder: (context, index) =>
-            _MaterialCard(material: materials[index]),
+            _MaterialCard(material: materials[index], user: widget.user),
       );
     }
 
@@ -514,7 +515,7 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
       ),
       itemCount: materials.length,
       itemBuilder: (context, index) =>
-          _MaterialCard(material: materials[index]),
+          _MaterialCard(material: materials[index], user: widget.user),
     );
   }
 
@@ -589,7 +590,8 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
 
 class _MaterialCard extends StatelessWidget {
   final Map<String, dynamic> material;
-  const _MaterialCard({required this.material});
+  final Map<String, dynamic> user;
+  const _MaterialCard({required this.material, required this.user});
 
   IconData _iconForType(String? type) {
     switch (type?.toLowerCase()) {
@@ -669,19 +671,101 @@ class _MaterialCard extends StatelessWidget {
             ],
           ),
         ),
-        trailing: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            Icons.download_rounded,
-            color: AppColors.primary,
-            size: 18,
-          ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () async {
+                final bloc = context.read<MaterialBloc>();
+                final baseUrl =
+                    bloc.remoteDataSource.apiClient.dio.options.baseUrl;
+                final materialId = material['id'];
+                final url = Uri.parse(
+                  '$baseUrl/materials/$materialId/download',
+                );
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not open file')),
+                  );
+                }
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.download_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+              ),
+            ),
+            if (user['role'] == 'staff' || user['role'] == 'hod') ...[
+              SizedBox(width: 8),
+              PopupMenuButton(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_rounded,
+                          color: Colors.redAccent,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (val) {
+                  if (val == 'delete') {
+                    _showDeleteConfirmDialog(context);
+                  }
+                },
+              ),
+            ],
+          ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Delete Material'),
+        content: Text(
+          'Are you sure you want to permanently delete this material?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<MaterialBloc>().add(DeleteMaterial(material['id']));
+            },
+            child: Text('Delete', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
       ),
     );
   }

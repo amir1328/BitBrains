@@ -16,4 +16,12 @@ class MaterialRepository {
       throw Exception('Failed to fetch materials: $e');
     }
   }
+
+  Future<void> deleteMaterial(int id) async {
+    try {
+      await remoteDataSource.deleteMaterial(id);
+    } catch (e) {
+      throw Exception('Failed to delete material: $e');
+    }
+  }
 }

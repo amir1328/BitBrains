@@ -12,6 +12,15 @@ class MaterialsLearned extends MaterialEvent {
   MaterialsLearned({this.course, this.semester});
 }
 
+class DeleteMaterial extends MaterialEvent {
+  final int materialId;
+
+  DeleteMaterial(this.materialId);
+
+  @override
+  List<Object> get props => [materialId];
+}
+
 abstract class StudyMaterialState extends Equatable {
   @override
   List<Object> get props => [];
