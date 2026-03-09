@@ -18,3 +18,21 @@ class AlumniProfileResponse(AlumniProfileBase):
 
     class Config:
         from_attributes = True
+
+class JobPostingBase(BaseModel):
+    title: str
+    company: str
+    description: str
+    apply_url: Optional[str] = None
+
+class JobPostingCreate(JobPostingBase):
+    pass
+
+class JobPostingResponse(JobPostingBase):
+    id: int
+    alumni_id: int
+    alumni_name: Optional[str] = None
+    alumni_company: Optional[str] = None
+
+    class Config:
+        from_attributes = True

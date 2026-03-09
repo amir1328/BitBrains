@@ -17,3 +17,14 @@ class UpdateAlumniProfile extends AlumniEvent {
   @override
   List<Object> get props => [data];
 }
+
+class LoadJobs extends AlumniEvent {}
+
+class CreateJob extends AlumniEvent {
+  final Map<String, dynamic> data;
+
+  const CreateJob(this.data);
+
+  @override
+  List<Object> get props => [data];
+}

@@ -496,26 +496,40 @@ class _MaterialListScreenState extends State<MaterialListScreen> {
     );
 
     if (crossAxisCount == 1) {
-      return ListView.builder(
-        padding: padding,
-        itemCount: materials.length,
-        itemBuilder: (context, index) =>
-            _MaterialCard(material: materials[index], user: widget.user),
+      return RefreshIndicator(
+        onRefresh: () async {
+          context.read<MaterialBloc>().add(MaterialsLearned());
+        },
+        color: AppColors.accent,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        child: ListView.builder(
+          padding: padding,
+          itemCount: materials.length,
+          itemBuilder: (context, index) =>
+              _MaterialCard(material: materials[index], user: widget.user),
+        ),
       );
     }
 
     // Grid for tablet+
-    return GridView.builder(
-      padding: padding,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.6,
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<MaterialBloc>().add(MaterialsLearned());
+      },
+      color: AppColors.accent,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      child: GridView.builder(
+        padding: padding,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 2.6,
+        ),
+        itemCount: materials.length,
+        itemBuilder: (context, index) =>
+            _MaterialCard(material: materials[index], user: widget.user),
       ),
-      itemCount: materials.length,
-      itemBuilder: (context, index) =>
-          _MaterialCard(material: materials[index], user: widget.user),
     );
   }
 

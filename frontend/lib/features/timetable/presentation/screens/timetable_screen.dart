@@ -27,6 +27,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   ];
 
   int _semester = 5;
+  int _baseSemester = 5;
+  int _selectedYear = 3;
   String _courseName = 'AI&DS';
   bool _isStaffOrHod = false;
 
@@ -44,7 +46,9 @@ class _TimetableScreenState extends State<TimetableScreen>
 
         setState(() {
           _isStaffOrHod = role == 'staff' || role == 'hod';
-          _semester = year * 2 - 1;
+          _baseSemester = year * 2 - 1;
+          _semester = _baseSemester;
+          _selectedYear = year;
           _courseName = user['department'] as String? ?? 'AI&DS';
         });
       }
@@ -165,12 +169,162 @@ class _TimetableScreenState extends State<TimetableScreen>
                           ),
                         ),
                         SizedBox(height: 2),
-                        Text(
-                          'Sem $_semester — $_courseName',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Sem $_semester — $_courseName',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            if (_isStaffOrHod) ...[
+                              PopupMenuButton<int>(
+                                initialValue: _selectedYear,
+                                onSelected: (int newYear) {
+                                  setState(() {
+                                    _selectedYear = newYear;
+                                    _baseSemester = newYear * 2 - 1;
+                                    _semester = _baseSemester;
+                                  });
+                                  context.read<TimetableBloc>().add(
+                                    LoadTimetable(
+                                      semester: _semester,
+                                      courseName: _courseName,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Year $_selectedYear',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                itemBuilder: (context) =>
+                                    List.generate(4, (index) {
+                                      return PopupMenuItem(
+                                        value: index + 1,
+                                        child: Text('Year ${index + 1}'),
+                                      );
+                                    }),
+                              ),
+                              SizedBox(width: 6),
+                              PopupMenuButton<int>(
+                                initialValue: _semester,
+                                onSelected: (int newSemester) {
+                                  setState(() => _semester = newSemester);
+                                  context.read<TimetableBloc>().add(
+                                    LoadTimetable(
+                                      semester: _semester,
+                                      courseName: _courseName,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Sem $_semester',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: _baseSemester,
+                                    child: Text('Sem $_baseSemester (Odd)'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: _baseSemester + 1,
+                                    child: Text(
+                                      'Sem ${_baseSemester + 1} (Even)',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _semester = _semester == _baseSemester
+                                        ? _baseSemester + 1
+                                        : _baseSemester;
+                                  });
+                                  context.read<TimetableBloc>().add(
+                                    LoadTimetable(
+                                      semester: _semester,
+                                      courseName: _courseName,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Switch to Sem ${_semester == _baseSemester ? _baseSemester + 1 : _baseSemester}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -283,15 +437,31 @@ class _TimetableScreenState extends State<TimetableScreen>
                           if (dayEntries.isEmpty) {
                             return _buildEmptyDay();
                           }
-                          return ListView.builder(
-                            padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
-                            itemCount: dayEntries.length,
-                            itemBuilder: (context, i) => _ClassCard(
-                              entry: dayEntries[i],
-                              accentColor: _timeColor(dayEntries[i].startTime),
-                              isStaffOrHod: _isStaffOrHod,
-                              onEdit: () => _showEntryForm(dayEntries[i]),
-                              onDelete: () => _confirmDelete(dayEntries[i]),
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              context.read<TimetableBloc>().add(
+                                LoadTimetable(
+                                  semester: _semester,
+                                  courseName: _courseName,
+                                ),
+                              );
+                            },
+                            color: AppColors.accent,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            child: ListView.builder(
+                              padding: EdgeInsets.fromLTRB(16, 16, 16, 80),
+                              itemCount: dayEntries.length,
+                              itemBuilder: (context, i) => _ClassCard(
+                                entry: dayEntries[i],
+                                accentColor: _timeColor(
+                                  dayEntries[i].startTime,
+                                ),
+                                isStaffOrHod: _isStaffOrHod,
+                                onEdit: () => _showEntryForm(dayEntries[i]),
+                                onDelete: () => _confirmDelete(dayEntries[i]),
+                              ),
                             ),
                           );
                         }).toList(),

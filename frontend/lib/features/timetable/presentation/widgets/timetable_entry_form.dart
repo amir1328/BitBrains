@@ -82,7 +82,11 @@ class _TimetableEntryFormState extends State<TimetableEntryForm> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.primary),
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surfaceTint: Colors.transparent,
+            ),
           ),
           child: child!,
         );

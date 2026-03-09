@@ -12,4 +12,12 @@ class AlumniRepository {
   Future<void> updateProfile(Map<String, dynamic> data) async {
     await remoteDataSource.updateProfile(data);
   }
+
+  Future<List<Map<String, dynamic>>> getJobs() async {
+    return await remoteDataSource.getJobs();
+  }
+
+  Future<void> createJob(Map<String, dynamic> data) async {
+    await remoteDataSource.createJob(data);
+  }
 }

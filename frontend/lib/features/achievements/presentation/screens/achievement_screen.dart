@@ -198,11 +198,22 @@ class _AchievementScreenState extends State<AchievementScreen> {
                       if (state.achievements.isEmpty) {
                         return _buildEmptyState();
                       }
-                      return ListView.builder(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
-                        itemCount: state.achievements.length,
-                        itemBuilder: (context, index) => _AchievementCard(
-                          achievement: state.achievements[index],
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          context.read<AchievementBloc>().add(
+                            LoadAchievements(),
+                          );
+                        },
+                        color: AppColors.gold,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        child: ListView.builder(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+                          itemCount: state.achievements.length,
+                          itemBuilder: (context, index) => _AchievementCard(
+                            achievement: state.achievements[index],
+                          ),
                         ),
                       );
                     } else if (state is AchievementError) {

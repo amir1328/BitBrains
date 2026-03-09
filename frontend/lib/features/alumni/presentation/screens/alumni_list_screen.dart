@@ -15,11 +15,24 @@ class AlumniListScreen extends StatefulWidget {
   State<AlumniListScreen> createState() => _AlumniListScreenState();
 }
 
-class _AlumniListScreenState extends State<AlumniListScreen> {
+class _AlumniListScreenState extends State<AlumniListScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  String _searchQuery = '';
+  int? _filterYear;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     context.read<AlumniBloc>().add(LoadAlumni());
+    context.read<AlumniBloc>().add(LoadJobs());
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _launchUrl(String urlString) async {
@@ -224,6 +237,19 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                   ],
                 ),
               ),
+              SizedBox(height: 16),
+              TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.accent,
+                labelColor: AppColors.accent,
+                unselectedLabelColor: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.color,
+                tabs: const [
+                  Tab(text: 'Directory'),
+                  Tab(text: 'Opportunities'),
+                ],
+              ),
               SizedBox(height: 12),
               Expanded(
                 child: BlocConsumer<AlumniBloc, AlumniState>(
@@ -232,6 +258,10 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Profile updated!')),
                       );
+                    } else if (state is JobCreateSuccess) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Job posted!')));
                     }
                   },
                   builder: (context, state) {
@@ -242,17 +272,12 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
                         ),
                       );
                     } else if (state is AlumniLoaded) {
-                      if (state.alumni.isEmpty) {
-                        return _buildEmptyState();
-                      }
-                      return ListView.builder(
-                        padding: EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: state.alumni.length,
-                        itemBuilder: (ctx, i) => _AlumniCard(
-                          alum: state.alumni[i],
-                          onLinkedIn: (url) => _launchUrl(url),
-                          onEmail: (email) => _launchUrl('mailto:$email'),
-                        ),
+                      return TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildDirectoryTab(state.alumni),
+                          _buildOpportunitiesTab(state.jobs),
+                        ],
                       );
                     } else if (state is AlumniError) {
                       return Center(
@@ -274,10 +299,178 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
           ),
         ),
       ),
+      floatingActionButton: widget.canEdit
+          ? FloatingActionButton.extended(
+              onPressed: _showPostJobDialog,
+              backgroundColor: AppColors.accent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              icon: Icon(Icons.add_rounded, color: Colors.white),
+              label: Text(
+                'Post Job',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildDirectoryTab(List<Map<String, dynamic>> alumni) {
+    var filteredAlumni = alumni;
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filteredAlumni = filteredAlumni.where((alum) {
+        final name = (alum['user_name'] as String?)?.toLowerCase() ?? '';
+        final company =
+            (alum['current_company'] as String?)?.toLowerCase() ?? '';
+        final title = (alum['job_title'] as String?)?.toLowerCase() ?? '';
+        return name.contains(query) ||
+            company.contains(query) ||
+            title.contains(query);
+      }).toList();
+    }
+    if (_filterYear != null) {
+      filteredAlumni = filteredAlumni
+          .where((alum) => alum['graduation_year'] == _filterYear)
+          .toList();
+    }
+
+    final years =
+        alumni
+            .map((a) => a['graduation_year'] as int?)
+            .where((y) => y != null)
+            .toSet()
+            .toList()
+            .cast<int>()
+          ..sort((a, b) => b.compareTo(a));
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search explicitly (e.g. Google, Data Scientist)',
+                    prefixIcon: Icon(Icons.search_rounded, size: 18),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              if (years.isNotEmpty) ...[
+                SizedBox(width: 8),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: PopupMenuButton<int?>(
+                    initialValue: _filterYear,
+                    icon: Icon(
+                      Icons.filter_list_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    onSelected: (int? val) {
+                      setState(() => _filterYear = val);
+                    },
+                    itemBuilder: (context) {
+                      return [
+                        PopupMenuItem<int?>(
+                          value: null,
+                          child: Text('All Years'),
+                        ),
+                        ...years.map(
+                          (y) => PopupMenuItem<int?>(
+                            value: y,
+                            child: Text('Class of $y'),
+                          ),
+                        ),
+                      ];
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Expanded(
+          child: filteredAlumni.isEmpty
+              ? _buildEmptyState(
+                  'No matches found',
+                  'Try adjusting your search or filters',
+                )
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<AlumniBloc>().add(LoadAlumni());
+                  },
+                  color: AppColors.accent,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: ListView.builder(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 80),
+                    itemCount: filteredAlumni.length,
+                    itemBuilder: (ctx, i) => _AlumniCard(
+                      alum: filteredAlumni[i],
+                      onLinkedIn: (url) => _launchUrl(url),
+                      onEmail: (email) => _launchUrl('mailto:$email'),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOpportunitiesTab(List<Map<String, dynamic>> jobs) {
+    if (jobs.isEmpty) {
+      return _buildEmptyState(
+        'No opportunities yet',
+        'Jobs posted by alumni will appear here',
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<AlumniBloc>().add(LoadJobs());
+      },
+      color: AppColors.accent,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 80),
+        itemCount: jobs.length,
+        itemBuilder: (ctx, i) =>
+            _JobCard(job: jobs[i], onApply: (url) => _launchUrl(url)),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String title, String subtitle) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -297,7 +490,7 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            'No alumni found',
+            title,
             style: TextStyle(
               color: Theme.of(context).textTheme.bodyMedium?.color,
               fontSize: 16,
@@ -306,13 +499,147 @@ class _AlumniListScreenState extends State<AlumniListScreen> {
           ),
           SizedBox(height: 6),
           Text(
-            'Alumni will appear here once they register',
+            subtitle,
             style: TextStyle(
               color: Theme.of(context).textTheme.bodySmall?.color,
               fontSize: 13,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPostJobDialog() {
+    final titleController = TextEditingController();
+    final companyController = TextEditingController();
+    final urlController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.accent, AppColors.timeAfternoon],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.work_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 14),
+                  Text(
+                    'Post Opportunity',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24),
+              TextField(
+                controller: titleController,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Job/Opportunity Title',
+                  prefixIcon: Icon(Icons.work_outline_rounded),
+                ),
+              ),
+              SizedBox(height: 14),
+              TextField(
+                controller: companyController,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Company',
+                  prefixIcon: Icon(Icons.business_outlined),
+                ),
+              ),
+              SizedBox(height: 14),
+              TextField(
+                controller: descriptionController,
+                maxLines: 3,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Description / Note to students',
+                  alignLabelWithHint: true,
+                  prefixIcon: Icon(Icons.notes_rounded),
+                ),
+              ),
+              SizedBox(height: 14),
+              TextField(
+                controller: urlController,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Apply URL (Optional)',
+                  prefixIcon: Icon(Icons.link_rounded),
+                ),
+              ),
+              SizedBox(height: 24),
+              GradientButton(
+                label: 'Post Job',
+                icon: Icons.send_rounded,
+                onPressed: () {
+                  if (titleController.text.isEmpty ||
+                      companyController.text.isEmpty ||
+                      descriptionController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Please fill out Title, Company and Description.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  context.read<AlumniBloc>().add(
+                    CreateJob({
+                      'title': titleController.text,
+                      'company': companyController.text,
+                      'description': descriptionController.text,
+                      if (urlController.text.isNotEmpty)
+                        'apply_url': urlController.text,
+                    }),
+                  );
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -453,6 +780,139 @@ class _AlumniCard extends StatelessWidget {
           border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Icon(icon, size: 16, color: color),
+      ),
+    );
+  }
+}
+
+class _JobCard extends StatelessWidget {
+  final Map job;
+  final void Function(String) onApply;
+  const _JobCard({required this.job, required this.onApply});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = job['title'] ?? 'Role';
+    final company = job['company'] ?? 'Company';
+    final description = job['description'] ?? '';
+    final applyUrl = job['apply_url'];
+    final alumniName = job['alumni_name'] ?? 'Alumni';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0xFF263151), width: 1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.accent, AppColors.timeAfternoon],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.business_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      company,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+          ),
+          SizedBox(height: 14),
+          Divider(color: Color(0xFF263151), height: 1),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Posted by $alumniName',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
+              ),
+              if (applyUrl != null && applyUrl.toString().trim().isNotEmpty)
+                InkWell(
+                  onTap: () => onApply(applyUrl),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Apply',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: AppColors.accent,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

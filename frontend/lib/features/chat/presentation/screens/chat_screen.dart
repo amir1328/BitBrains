@@ -50,15 +50,28 @@ class _ChatScreenState extends State<ChatScreen> {
                         );
                       }
                     });
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isUser = msg['role'] == 'user';
-                        return _buildBubble(msg['text'] ?? '', isUser, context);
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        context.read<ChatBloc>().add(LoadChatHistory());
                       },
+                      color: AppColors.primary,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = messages[index];
+                          final isUser = msg['role'] == 'user';
+                          return _buildBubble(
+                            msg['text'] ?? '',
+                            isUser,
+                            context,
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

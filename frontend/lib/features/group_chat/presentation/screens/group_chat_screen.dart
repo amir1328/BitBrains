@@ -113,72 +113,87 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                       if (state.messages.isEmpty) {
                         return _buildEmptyState();
                       }
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        itemCount: state.messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = state.messages[index];
-                          final isMe = msg['sender_id'] == _currentUserId;
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          context.read<GroupChatBloc>().add(
+                            ConnectGroupChat(
+                              roomId: widget.roomId,
+                              userId: _currentUserId,
+                            ),
+                          );
+                        },
+                        color: AppColors.primary,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: state.messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = state.messages[index];
+                            final isMe = msg['sender_id'] == _currentUserId;
 
-                          // Parse current message date
-                          DateTime? currentMsgDate;
-                          if (msg['timestamp'] != null) {
-                            currentMsgDate = DateTime.tryParse(
-                              msg['timestamp'],
-                            )?.toLocal();
-                          }
-
-                          // Parse previous message date to check if we need a new date header
-                          DateTime? prevMsgDate;
-                          bool showDateHeader = false;
-                          if (index == 0) {
-                            showDateHeader =
-                                true; // Always show header for first msg
-                          } else {
-                            final prevMsg = state.messages[index - 1];
-                            if (prevMsg['timestamp'] != null) {
-                              prevMsgDate = DateTime.tryParse(
-                                prevMsg['timestamp'],
+                            // Parse current message date
+                            DateTime? currentMsgDate;
+                            if (msg['timestamp'] != null) {
+                              currentMsgDate = DateTime.tryParse(
+                                msg['timestamp'],
                               )?.toLocal();
-                              if (currentMsgDate != null &&
-                                  prevMsgDate != null) {
-                                if (currentMsgDate.year != prevMsgDate.year ||
-                                    currentMsgDate.month != prevMsgDate.month ||
-                                    currentMsgDate.day != prevMsgDate.day) {
-                                  showDateHeader = true;
+                            }
+
+                            // Parse previous message date to check if we need a new date header
+                            DateTime? prevMsgDate;
+                            bool showDateHeader = false;
+                            if (index == 0) {
+                              showDateHeader =
+                                  true; // Always show header for first msg
+                            } else {
+                              final prevMsg = state.messages[index - 1];
+                              if (prevMsg['timestamp'] != null) {
+                                prevMsgDate = DateTime.tryParse(
+                                  prevMsg['timestamp'],
+                                )?.toLocal();
+                                if (currentMsgDate != null &&
+                                    prevMsgDate != null) {
+                                  if (currentMsgDate.year != prevMsgDate.year ||
+                                      currentMsgDate.month !=
+                                          prevMsgDate.month ||
+                                      currentMsgDate.day != prevMsgDate.day) {
+                                    showDateHeader = true;
+                                  }
                                 }
                               }
                             }
-                          }
 
-                          // Check if previous message was from the same sender to group them
-                          bool isConsecutive = false;
-                          if (index > 0 && !showDateHeader) {
-                            final prevMsg = state.messages[index - 1];
-                            if (prevMsg['sender_id'] == msg['sender_id']) {
-                              isConsecutive = true;
+                            // Check if previous message was from the same sender to group them
+                            bool isConsecutive = false;
+                            if (index > 0 && !showDateHeader) {
+                              final prevMsg = state.messages[index - 1];
+                              if (prevMsg['sender_id'] == msg['sender_id']) {
+                                isConsecutive = true;
+                              }
                             }
-                          }
 
-                          return Column(
-                            crossAxisAlignment:
-                                StretchMode.zoomBackground.index == 0
-                                ? CrossAxisAlignment.center
-                                : CrossAxisAlignment.stretch,
-                            children: [
-                              if (showDateHeader && currentMsgDate != null)
-                                _buildDateHeader(currentMsgDate),
-                              _buildBubble(
-                                msg,
-                                isMe,
-                                isConsecutive,
-                                currentMsgDate,
-                                context,
-                              ),
-                            ],
-                          );
-                        },
+                            return Column(
+                              crossAxisAlignment:
+                                  StretchMode.zoomBackground.index == 0
+                                  ? CrossAxisAlignment.center
+                                  : CrossAxisAlignment.stretch,
+                              children: [
+                                if (showDateHeader && currentMsgDate != null)
+                                  _buildDateHeader(currentMsgDate),
+                                _buildBubble(
+                                  msg,
+                                  isMe,
+                                  isConsecutive,
+                                  currentMsgDate,
+                                  context,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       );
                     } else if (state is GroupChatError) {
                       return Center(
