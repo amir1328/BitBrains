@@ -135,56 +135,58 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildWelcome() {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.all(28),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.accent],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.4),
-                    blurRadius: 32,
-                    offset: Offset(0, 8),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.accent],
                   ),
-                ],
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 32,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.psychology_rounded,
+                  color: Colors.white,
+                  size: 44,
+                ),
               ),
-              child: Icon(
-                Icons.psychology_rounded,
-                color: Colors.white,
-                size: 44,
+              SizedBox(height: 24),
+              Text(
+                'BitBrains AI Assistant',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-            ),
-            SizedBox(height: 24),
-            Text(
-              'BitBrains AI Assistant',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Theme.of(context).colorScheme.onSurface,
+              SizedBox(height: 10),
+              Text(
+                'Ask anything about your course materials.\nI\'ll answer based on your actual syllabus.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Ask anything about your course materials.\nI\'ll answer based on your actual syllabus.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 28),
-            _suggestionChip('Explain Gradient Descent'),
-            SizedBox(height: 8),
-            _suggestionChip('What is covered in Sem 5?'),
-          ],
+              SizedBox(height: 28),
+              _suggestionChip('Explain Gradient Descent'),
+              SizedBox(height: 8),
+              _suggestionChip('What is covered in Sem 5?'),
+            ],
+          ),
         ),
       ),
     );
