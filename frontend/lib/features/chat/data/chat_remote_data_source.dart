@@ -5,11 +5,14 @@ class ChatRemoteDataSource {
 
   ChatRemoteDataSource({required this.apiClient});
 
-  Future<Map<String, dynamic>> askQuestion(String question) async {
+  Future<Map<String, dynamic>> askQuestion(
+    String question, {
+    List<Map<String, dynamic>>? history,
+  }) async {
     try {
       final response = await apiClient.dio.post(
         '/chat/ask',
-        data: {'question': question},
+        data: {'question': question, if (history != null) 'history': history},
       );
       return response.data;
     } catch (e) {

@@ -5,6 +5,7 @@ from app.services.rag_service import RagService
 from app.models.user import User
 from app.utils import get_current_user
 from pydantic import BaseModel
+from typing import List, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -20,8 +21,14 @@ router = APIRouter(
 )
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     question: str
+    history: Optional[List[ChatMessage]] = []
 
 
 class ChatResponse(BaseModel):
@@ -88,6 +95,9 @@ Your primary goal is to assist students with their questions.
 If relevant study materials are provided below in the "Context" section, prioritize using them to formulate a highly accurate answer. 
 If the "Context" is empty or does not contain the answer, act as a general, highly knowledgeable AI assistant and answer their question directly to the best of your ability. Do NOT say "I cannot answer this based on the available materials".
 
+Previous Chat History:
+{history}
+
 Context:
 {context}
 
@@ -97,14 +107,20 @@ Answer:"""
             
             prompt = PromptTemplate(
                 template=prompt_template,
-                input_variables=["context", "question"]
+                input_variables=["history", "context", "question"]
             )
             
             # Modern Runnable chain (replaces deprecated LLMChain)
             chain = prompt | llm | StrOutputParser()
             
+            # Format chat history
+            history_text = ""
+            if request.history:
+                history_text = "\n".join([f"{msg.role.capitalize()}: {msg.content}" for msg in request.history])
+
             # Execute chain asynchronously
             answer = await chain.ainvoke({
+                "history": history_text,
                 "context": context_text,
                 "question": request.question
             })

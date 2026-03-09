@@ -10,6 +10,10 @@ class ChatQuestionAsked extends ChatEvent {
   ChatQuestionAsked(this.question);
 }
 
+class LoadChatHistory extends ChatEvent {}
+
+class ClearChatHistory extends ChatEvent {}
+
 abstract class ChatState extends Equatable {
   @override
   List<Object> get props => [];

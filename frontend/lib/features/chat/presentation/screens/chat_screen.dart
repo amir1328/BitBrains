@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/bloc/chat_bloc.dart';
 import '../../logic/bloc/chat_state.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -14,6 +15,12 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChatBloc>().add(LoadChatHistory());
+  }
 
   @override
   void dispose() {
@@ -127,6 +134,42 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
             ],
+          ),
+          Spacer(),
+          IconButton(
+            icon: Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+            tooltip: 'Clear Chat History',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  title: Text('Clear Chat'),
+                  content: Text(
+                    'Are you sure you want to delete this chat history?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        context.read<ChatBloc>().add(ClearChatHistory());
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(
+                        'Clear',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -265,16 +308,25 @@ class _ChatScreenState extends State<ChatScreen> {
                 ]
               : [],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser
-                ? Colors.white
-                : Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
-            height: 1.5,
-          ),
-        ),
+        child: isUser
+            ? Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              )
+            : MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
       ),
     );
   }
