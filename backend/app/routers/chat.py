@@ -82,7 +82,7 @@ async def ask_question(
             llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=OPENROUTER_API_KEY,
-                model="nvidia/llama-nemotron-embed-vl-1b-v2:free"
+                model="nvidia/nemotron-3-nano-30b-a3b:free"
             )
             
             # Define prompt template
